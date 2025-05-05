@@ -20,6 +20,9 @@ import {
   translateSituacaoBeneficio,
 } from "../utils/translations";
 
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 interface FormErrors {
   cpf?: string;
   nb?: string;
@@ -127,6 +130,15 @@ const IndividualQueryDashboard: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isEnabled && accountLimits?.available_limit !== undefined && accountLimits.available_limit <= 0) {
+      toast.error("Não foi possível realizar a consulta online por falta de saldo disponível. \n\nPor favor, utilize a consulta off-line ou solicite saldo adicional à equipe de Planejamento ou ao seu Gerente Expande.");
+      return;
+    }
+
+    
+
+    
 
     // validações...
     const newErr: FormErrors = {};
@@ -373,7 +385,7 @@ const IndividualQueryDashboard: React.FC = () => {
                     <div>
                       <dt className="text-sm text-neutral-500">Pensão:</dt>
                       <dd className="font-medium">
-                      {translatePensao(pesquisa[0].pensao)}
+                        {translatePensao(pesquisa[0].pensao)}
                       </dd>
                     </div>
                     <div>
@@ -399,7 +411,7 @@ const IndividualQueryDashboard: React.FC = () => {
                         Tipo de Bloqueio:
                       </dt>
                       <dd className="font-medium">
-                      {translateTipoBloqueio(pesquisa[0].tipo_bloqueio)}
+                        {translateTipoBloqueio(pesquisa[0].tipo_bloqueio)}
                       </dd>
                     </div>
                   </dl>
@@ -437,20 +449,26 @@ const IndividualQueryDashboard: React.FC = () => {
                         Tipo de Crédito:
                       </dt>
                       <dd className="font-medium">
-                      {translateTipoCredito(pesquisa[0].tipo_credito)}
+                        {translateTipoCredito(pesquisa[0].tipo_credito)}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-sm text-neutral-500">
                         Status do Benefício:
                       </dt>
-                      <dd className={`font-medium ${
-          translateSituacaoBeneficio(pesquisa[0].situacao_beneficio) === 'Elegível'
-            ? 'text-green-600'
-            : 'text-red-600'
-        }`}>
-          {translateSituacaoBeneficio(pesquisa[0].situacao_beneficio)}
-        </dd>
+                      <dd
+                        className={`font-medium ${
+                          translateSituacaoBeneficio(
+                            pesquisa[0].situacao_beneficio
+                          ) === "Elegível"
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {translateSituacaoBeneficio(
+                          pesquisa[0].situacao_beneficio
+                        )}
+                      </dd>
                     </div>
                   </dl>
                 </div>
@@ -561,7 +579,9 @@ const IndividualQueryDashboard: React.FC = () => {
           )}
         </div>
       </div>
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
+    
   );
 };
 
