@@ -13,6 +13,12 @@ import Button from "../components/Button";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
 import { Clipboard } from "lucide-react";
+import {
+  translatePensao,
+  translateTipoBloqueio,
+  translateTipoCredito,
+  translateSituacaoBeneficio,
+} from "../utils/translations";
 
 interface FormErrors {
   cpf?: string;
@@ -61,38 +67,36 @@ const IndividualQueryDashboard: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [pesquisa, setPesquisa] = useState<any[] | null>(null);
 
-
   const [accountLimits, setAccountLimits] = useState<AccountLimits | null>(
     null
   );
   const [isLoadingLimits, setIsLoadingLimits] = useState(false);
-  
 
   // no topo do seu componente, antes dos useEffect e handleSubmit:
-const fetchAccountLimits = async () => {
-  if (!user) return;
+  const fetchAccountLimits = async () => {
+    if (!user) return;
 
-  setIsLoadingLimits(true);
-  try {
-    const res = await fetch("http://177.153.62.236:5678//webhook/api/saldo", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: user.id }),
-    });
-    const d = await res.json();
-    setAccountLimits({
-      id: d.id,
-      login: d.login,
-      total_loaded: d.total_carregado,
-      available_limit: d.limite_disponivel,
-      queries_performed: d.consultas_realizada,
-    });
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setIsLoadingLimits(false);
-  }
-};
+    setIsLoadingLimits(true);
+    try {
+      const res = await fetch("http://177.153.62.236:5678//webhook/api/saldo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: user.id }),
+      });
+      const d = await res.json();
+      setAccountLimits({
+        id: d.id,
+        login: d.login,
+        total_loaded: d.total_carregado,
+        available_limit: d.limite_disponivel,
+        queries_performed: d.consultas_realizada,
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoadingLimits(false);
+    }
+  };
 
   // busca saldo
   useEffect(() => {
@@ -115,7 +119,7 @@ const fetchAccountLimits = async () => {
       )
       .catch(console.error)
       .finally(() => setIsLoadingLimits(false));
-      fetchAccountLimits();
+    fetchAccountLimits();
   }, [user]);
 
   const validateCPF = (v: string) => v.replace(/[^\d]/g, "").length === 11;
@@ -123,20 +127,20 @@ const fetchAccountLimits = async () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     // validações...
     const newErr: FormErrors = {};
     if (!validateCPF(cpf)) newErr.cpf = "CPF inválido";
     if (!validateNB(nb)) newErr.nb = "Número inválido";
     setErrors(newErr);
     if (Object.keys(newErr).length) return;
-  
+
     // atualiza limite antes de montar o payload (opcional)
     await fetchAccountLimits();
-  
+
     setIsSearching(true);
     setPesquisa(null);
-  
+
     const base = "http://177.153.62.236:5678//webhook/api";
     const url = isEnabled ? `${base}/consulta` : `${base}/consultaoff`;
     const payload: any = {
@@ -148,7 +152,7 @@ const fetchAccountLimits = async () => {
       payload.limite_disponivel = (
         accountLimits?.available_limit ?? 0
       ).toString();
-  
+
     try {
       const res = await fetch(url, {
         method: "POST",
@@ -165,7 +169,6 @@ const fetchAccountLimits = async () => {
       await fetchAccountLimits();
     }
   };
-  
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
@@ -370,7 +373,7 @@ const fetchAccountLimits = async () => {
                     <div>
                       <dt className="text-sm text-neutral-500">Pensão:</dt>
                       <dd className="font-medium">
-                        {pesquisa[0].pensao === "not_payer" ? "NÃO" : "SIM"}
+                      {translatePensao(pesquisa[0].pensao)}
                       </dd>
                     </div>
                     <div>
@@ -396,7 +399,7 @@ const fetchAccountLimits = async () => {
                         Tipo de Bloqueio:
                       </dt>
                       <dd className="font-medium">
-                        {humanize(pesquisa[0].tipo_bloqueio)}
+                      {translateTipoBloqueio(pesquisa[0].tipo_bloqueio)}
                       </dd>
                     </div>
                   </dl>
@@ -434,16 +437,20 @@ const fetchAccountLimits = async () => {
                         Tipo de Crédito:
                       </dt>
                       <dd className="font-medium">
-                        {humanize(pesquisa[0].tipo_credito)}
+                      {translateTipoCredito(pesquisa[0].tipo_credito)}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-sm text-neutral-500">
                         Status do Benefício:
                       </dt>
-                      <dd className="font-medium">
-                        {humanize(pesquisa[0].situacao_beneficio)}
-                      </dd>
+                      <dd className={`font-medium ${
+          translateSituacaoBeneficio(pesquisa[0].situacao_beneficio) === 'Elegível'
+            ? 'text-green-600'
+            : 'text-red-600'
+        }`}>
+          {translateSituacaoBeneficio(pesquisa[0].situacao_beneficio)}
+        </dd>
                     </div>
                   </dl>
                 </div>
