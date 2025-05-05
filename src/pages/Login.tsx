@@ -1,34 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { LogIn } from 'lucide-react';
-import EuropaLogo from '../components/EuropaLogo';
-import Button from '../components/Button';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { useAuth } from '../context/AuthContext';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
+import { LogIn, Clipboard } from "lucide-react";
+import EuropaLogo from "../components/EuropaLogo";
+import Button from "../components/Button";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { useAuth } from "../context/AuthContext";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Login: React.FC = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  
   const { login, isAuthenticated, error } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const from = location.state?.from?.pathname || "/";
 
-  // Get the page they were trying to access before being redirected to login
-  const from = location.state?.from?.pathname || '/';
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // estados do modal
+  const [showModal, setShowModal] = useState(false);
+  const [modalLogin, setModalLogin] = useState("");
+  const [modalNewPassword, setModalNewPassword] = useState("");
 
   useEffect(() => {
-    // If user is already authenticated, redirect
     if (isAuthenticated) {
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, from]);
 
   useEffect(() => {
-    // Update local error state when auth context error changes
     if (error) {
       setErrorMessage(error);
     }
@@ -38,22 +41,53 @@ const Login: React.FC = () => {
     e.preventDefault();
     setErrorMessage(null);
     setIsSubmitting(true);
-    
+
     if (!username.trim() || !password.trim()) {
-      setErrorMessage('Username and password are required');
+      setErrorMessage("Username and password are required");
       setIsSubmitting(false);
       return;
     }
-    
+
     try {
       const success = await login(username, password);
       if (success) {
         navigate(from, { replace: true });
       }
-    } catch (err) {
-      setErrorMessage('An unexpected error occurred');
+    } catch {
+      setErrorMessage("An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!modalLogin.trim() || !modalNewPassword.trim()) {
+      toast.error("Login e nova senha são obrigatórios");
+      return;
+    }
+    try {
+      const res = await fetch(
+        "http://177.153.62.236:5678//webhook/api/alterar",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            login: modalLogin,
+            senha: modalNewPassword,
+          }),
+        }
+      );
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message || "Erro ao alterar senha");
+      } else {
+        toast.success("Senha alterada com sucesso");
+        setShowModal(false);
+        setModalLogin("");
+        setModalNewPassword("");
+      }
+    } catch {
+      toast.error("Erro na requisição");
     }
   };
 
@@ -63,17 +97,18 @@ const Login: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="max-w-md w-full bg-white rounded-xl shadow-apple p-8"
+        className="max-w-md w-full bg-white rounded-xl shadow-apple p-8 relative"
       >
         <div className="flex justify-center mb-8">
           <EuropaLogo size="lg" />
         </div>
-        
-        {/* <h2 className="text-2xl font-semibold text-center mb-6">Logar em Nova Europa</h2> */}
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-neutral-700 mb-1">
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-neutral-700 mb-1"
+            >
               Login
             </label>
             <input
@@ -81,14 +116,17 @@ const Login: React.FC = () => {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="europa-input"
-              placeholder="Digite seu usuario"
+              className="europa-input w-full"
+              placeholder="Digite seu usuário"
               disabled={isSubmitting}
             />
           </div>
-          
+
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-1">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-neutral-700 mb-1"
+            >
               Senha
             </label>
             <input
@@ -96,14 +134,14 @@ const Login: React.FC = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="europa-input"
+              className="europa-input w-full"
               placeholder="Digite sua senha"
               disabled={isSubmitting}
             />
           </div>
-          
+
           {errorMessage && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="p-3 bg-error-500 bg-opacity-10 text-error-500 rounded-lg text-sm"
@@ -111,22 +149,73 @@ const Login: React.FC = () => {
               {errorMessage}
             </motion.div>
           )}
-          
+
           <Button
             type="submit"
             variant="primary"
             fullWidth
             disabled={isSubmitting}
-            icon={isSubmitting ? <LoadingSpinner size="sm" /> : <LogIn size={18} />}
+            icon={
+              isSubmitting ? <LoadingSpinner size="sm" /> : <LogIn size={18} />
+            }
             className="py-3 mt-2"
           >
-            {isSubmitting ? 'Logging in...' : 'Log In'}
+            {isSubmitting ? "Logging in..." : "Log In"}
           </Button>
         </form>
+
+        <Button
+          type="button"
+          variant="secondary"
+          fullWidth
+          className="py-3 mt-2"
+          onClick={() => setShowModal(true)}
+        >
+          Alterar Senha
+        </Button>
+
         
-        <div className="mt-6 text-center text-sm text-neutral-500">
-          <p>Test credentials: username "admin", password "admin123"</p>
-        </div>
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
+              <h3 className="text-xl font-semibold mb-4">Alterar Senha</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Login
+                  </label>
+                  <input
+                    type="text"
+                    value={modalLogin}
+                    onChange={(e) => setModalLogin(e.target.value)}
+                    className="europa-input w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Nova Senha
+                  </label>
+                  <input
+                    type="password"
+                    value={modalNewPassword}
+                    onChange={(e) => setModalNewPassword(e.target.value)}
+                    className="europa-input w-full"
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end space-x-2">
+                <Button variant="secondary" onClick={() => setShowModal(false)}>
+                  Cancelar
+                </Button>
+                <Button variant="primary" onClick={handleChangePassword}>
+                  Alterar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <ToastContainer position="top-right" autoClose={3000} />
       </motion.div>
     </div>
   );
