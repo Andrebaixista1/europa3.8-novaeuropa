@@ -511,8 +511,8 @@ const IndividualQueryDashboard: React.FC = () => {
                       </dt>
                       <dd className="font-medium">
                         {formatValue(
-                          "saldo_total_disponivel",
-                          pesquisa[0].saldo_total_disponivel
+                          "saldo_credito_consignado",
+                          pesquisa[0].saldo_credito_consignado
                         )}
                       </dd>
                     </div>
