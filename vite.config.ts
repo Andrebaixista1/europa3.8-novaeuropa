@@ -5,14 +5,14 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      // tudo que bater em /webhook vai para o seu n8n
       '/webhook': {
         target: 'http://177.153.62.236:5678',
         changeOrigin: true,
         secure: false,
-        // opcional: remove qualquer //extra do path
-        rewrite: path => path.replace(/^\/webhook\/+/, '/webhook/')
-      }
-    }
-  }
+        logLevel: 'debug',
+        // --> aqui a gente faz '/webhook/...' virar '//webhook/...'
+        rewrite: (path) => path.replace(/^\/webhook/, '//webhook'),
+      },
+    },
+  },
 })

@@ -8,6 +8,10 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+export const API_BASE = import.meta.env.DEV
+  ? 'http://177.153.62.236:5678/'
+  : ''; // em prod ficará vazio → usa path relativo e o vercel.json proxya
+
 
 const Login: React.FC = () => {
   const { login, isAuthenticated, error } = useAuth();
@@ -67,7 +71,7 @@ const Login: React.FC = () => {
     }
     try {
       const res = await fetch(
-        "http://177.153.62.236:5678//webhook/api/alterar",
+        `${API_BASE}/webhook/api/alterar`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

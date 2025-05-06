@@ -23,6 +23,11 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+export const API_BASE = import.meta.env.DEV
+  ? 'http://177.153.62.236:5678/'
+  : ''; // em prod ficará vazio → usa path relativo e o vercel.json proxya
+
+
 interface FormErrors {
   cpf?: string;
   nb?: string;
@@ -81,7 +86,7 @@ const IndividualQueryDashboard: React.FC = () => {
 
     setIsLoadingLimits(true);
     try {
-      const res = await fetch("http://177.153.62.236:5678//webhook/api/saldo", {
+      const res = await fetch(`${API_BASE}/webhook/api/saldo`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: user.id }),
@@ -105,7 +110,7 @@ const IndividualQueryDashboard: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     setIsLoadingLimits(true);
-    fetch("http://177.153.62.236:5678//webhook/api/saldo", {
+    fetch(`${API_BASE}/webhook/api/saldo`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: user.id }),
@@ -153,7 +158,7 @@ const IndividualQueryDashboard: React.FC = () => {
     setIsSearching(true);
     setPesquisa(null);
 
-    const base = "http://177.153.62.236:5678//webhook/api";
+    const base = `${API_BASE}/webhook/api`;
     const url = isEnabled ? `${base}/consulta` : `${base}/consultaoff`;
     const payload: any = {
       id: user.id,

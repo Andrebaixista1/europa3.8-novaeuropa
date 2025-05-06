@@ -1,8 +1,6 @@
 {
-  "rewrites": [
-    {
-      "source": "/webhook/:path*",
-      "destination": "http://177.153.62.236:5678/webhook/:path*"
-    }
+  "rewrites":[
+    { "source":"/webhook/:path*",
+      "destination":"http://177.153.62.236:5678//webhook/:path*" }
   ]
 }
