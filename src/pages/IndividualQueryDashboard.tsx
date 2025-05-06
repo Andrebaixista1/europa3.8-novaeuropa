@@ -584,6 +584,12 @@ const IndividualQueryDashboard: React.FC = () => {
           )}
         </div>
       </div>
+      <footer className="bg-white py-6 mt-auto">
+        <div className="container mx-auto px-4 text-center text-neutral-500 text-sm">
+          <p>© 2025 Nova Europa. Todos os direitos reservados. Criado e Desenvolvido por André Felipe | Lua  0.1.2025</p>
+        </div>
+      </footer>
+
       <ToastContainer position="top-right" autoClose={3000} />
     </div>
     
