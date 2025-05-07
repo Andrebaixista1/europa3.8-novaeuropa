@@ -1,11 +1,15 @@
 // src/pages/CreateLogins.tsx
 import React, { useEffect, useState, useMemo } from "react";
-import { Users } from "lucide-react";
+import { Users, FilterX, UserPlus, UserMinus } from "lucide-react";
 import DashboardHeader from "../components/DashboardHeader";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Button from "../components/Button";
+import AddUserModal from "../components/AddUserModal";
+import DeleteUserModal from "../components/DeleteUserModal";
 
-const API_BASE = import.meta.env.DEV ? "http://177.153.62.236:5678/" : "";
+const API_BASE = import.meta.env.DEV
+  ? "http://177.153.62.236:5678/"
+  : "";
 
 interface Usuario {
   id: number;
@@ -23,10 +27,9 @@ const CreateLogins: React.FC = () => {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [sortConfig, setSortConfig] = useState<{
-    key: keyof Usuario;
-    direction: "asc" | "desc";
-  } | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Usuario; direction: "asc" | "desc" } | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDeleteUserOpen, setIsDeleteUserOpen] = useState(false);
 
   useEffect(() => {
     async function fetchUsuarios() {
@@ -48,13 +51,13 @@ const CreateLogins: React.FC = () => {
   const displayedUsers = useMemo(() => {
     let data = usuarios;
     if (startDate) {
-      data = data.filter((u) => u.data_criacao.slice(0, 10) >= startDate);
+      data = data.filter(u => u.data_criacao.slice(0, 10) >= startDate);
     }
     if (endDate) {
-      data = data.filter((u) => u.data_criacao.slice(0, 10) <= endDate);
+      data = data.filter(u => u.data_criacao.slice(0, 10) <= endDate);
     }
     if (searchTerm) {
-      data = data.filter((u) =>
+      data = data.filter(u =>
         u.login.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -95,12 +98,20 @@ const CreateLogins: React.FC = () => {
     setSearchTerm("");
   };
 
+  const handleAddUser = () => {
+    setIsAddModalOpen(true);
+  };
+
+  const handleDeleteUser = () => {
+    setIsDeleteUserOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
       <DashboardHeader title="Criar Logins" />
       <div className="container mx-auto px-4 py-8 flex-1">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow-apple p-6 flex flex-col items-center">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 items-start">
+          <div className="bg-white rounded-xl shadow-apple p-6 flex flex-col items-center justify-center h-full">
             <div className="p-3 bg-primary-100 rounded-full mb-3">
               <Users size={28} className="text-primary-600" />
             </div>
@@ -109,6 +120,7 @@ const CreateLogins: React.FC = () => {
               {displayedUsers.length}
             </span>
           </div>
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">
@@ -117,7 +129,7 @@ const CreateLogins: React.FC = () => {
               <input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={e => setStartDate(e.target.value)}
                 className="europa-input w-full"
               />
             </div>
@@ -128,29 +140,50 @@ const CreateLogins: React.FC = () => {
               <input
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={e => setEndDate(e.target.value)}
                 className="europa-input w-full"
               />
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
-              Buscar Login
-            </label>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Pesquisar login"
-              className="europa-input w-full"
-            />
-          </div>
-          <div className="flex items-end">
-            <Button variant="secondary" fullWidth onClick={clearFilters}>
-              Limpar Filtros
-            </Button>
+
+          <div className="flex flex-col space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
+                Buscar Login
+              </label>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Pesquisar login"
+                className="europa-input w-full"
+              />
+            </div>
+            <br />
+            <div className="flex justify-center items-center space-x-3 pt-2">
+              <Button variant="icon" onClick={handleAddUser} title="Adicionar Usuário">
+                <UserPlus size={20} className="text-neutral-600 hover:text-primary-600" />
+              </Button>
+              <Button variant="icon" onClick={handleDeleteUser} title="Excluir Usuário">
+                <UserMinus size={20} className="text-neutral-600 hover:text-red-600" />
+              </Button>
+              <Button variant="icon" onClick={clearFilters} title="Limpar Filtros">
+                <FilterX size={20} className="text-neutral-600 hover:text-red-600" />
+              </Button>
+            </div>
           </div>
         </div>
+
+        <AddUserModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+        />
+         
+        <DeleteUserModal
+          isOpen={isDeleteUserOpen}
+          onClose={() => setIsDeleteUserOpen(false)}
+        />
+         
 
         {isLoading && (
           <div className="flex justify-center py-20">
@@ -222,7 +255,7 @@ const CreateLogins: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200">
-                {displayedUsers.map((u) => (
+                {displayedUsers.map(u => (
                   <tr key={u.id}>
                     <td className="px-4 py-2 text-sm">{u.id}</td>
                     <td className="px-4 py-2 text-sm">{u.nome}</td>
