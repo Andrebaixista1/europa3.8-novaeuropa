@@ -291,7 +291,7 @@ const UserRecharge: React.FC = () => {
                 variant="icon"
                 onClick={() => { setSearchTerm(""); setStartDate(""); setEndDate(""); }}
                 title="Limpar Todos os Filtros"
-                className="p-2 text-neutral-600 hover:text-primary-600"
+                className="p-2 text-neutral-600 hover:text-red-600"
               >
                 <FilterX size={20} />
               </Button>
