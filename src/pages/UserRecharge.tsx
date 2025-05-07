@@ -9,7 +9,7 @@ import Button from "../components/Button";
 import AddRechargeModal from "../components/AddRechargeModal"; // Importar o modal
 
 const API_BASE = import.meta.env.DEV
-  ? "http://177.153.62.236:5678"
+  ? "http://177.153.62.236:5678/"
   : "";
 
 interface RechargeEntry {
@@ -63,7 +63,7 @@ const UserRecharge: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}//webhook/api/creditos`);
+      const res = await fetch(`${API_BASE}/webhook/api/creditos`);
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: `Erro HTTP ${res.status}` }));
         throw new Error(errorData.message || `Erro ao buscar dados de recarga: ${res.status}`);
