@@ -132,7 +132,9 @@ const Landing: React.FC = () => {
               title="Gestão de Usuarios"
               description="Gerencie e crie novos logins de acesso."
               onClick={() => navigate("/dashboard/create-logins")}
-              disabled={!(isAuthenticated && user?.id === 1)}
+              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))
+                
+              }
             />
 
             <QueryOption
