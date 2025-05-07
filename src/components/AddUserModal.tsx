@@ -19,6 +19,7 @@ const AddUserModal: React.FC<Props> = ({ isOpen, onClose, onUserAdded }) => {
   const [nome, setNome] = useState("");
   const [login, setLogin] = useState("");
   const [senha, setSenha] = useState("");
+  const [creditos, setCreditos] = useState(200);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -30,6 +31,7 @@ const AddUserModal: React.FC<Props> = ({ isOpen, onClose, onUserAdded }) => {
     setNome("");
     setLogin("");
     setSenha("");
+    setCreditos(200);
   };
 
   const handleSubmit = async () => {
@@ -42,7 +44,12 @@ const AddUserModal: React.FC<Props> = ({ isOpen, onClose, onUserAdded }) => {
       const res = await fetch(`${API_BASE}/webhook/api/criar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, login, senha }),
+        body: JSON.stringify({
+          nome,
+          login,
+          senha,
+          total_carregado: creditos
+        }),
       });
       const data = await res.json() as { status: number; message: string };
       if (data.status === 200) {
@@ -66,7 +73,10 @@ const AddUserModal: React.FC<Props> = ({ isOpen, onClose, onUserAdded }) => {
       <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">Adicionar Usuário</h3>
-          <button onClick={() => { clearFields(); onClose(); }} className="text-neutral-500 hover:text-neutral-700">
+          <button
+            onClick={() => { clearFields(); onClose(); }}
+            className="text-neutral-500 hover:text-neutral-700"
+          >
             <X size={20} />
           </button>
         </div>
@@ -97,6 +107,18 @@ const AddUserModal: React.FC<Props> = ({ isOpen, onClose, onUserAdded }) => {
               placeholder="Login de acesso"
             />
           </div>
+          <div>
+            <label htmlFor="creditos" className="block text-sm font-medium text-neutral-700 mb-1">
+              Créditos
+            </label>
+            <input
+              id="creditos"
+              type="number"
+              value={creditos}
+              onChange={e => setCreditos(Number(e.target.value))}
+              className="europa-input w-full"
+            />
+          </div>
           <div className="relative">
             <label htmlFor="senha" className="block text-sm font-medium text-neutral-700 mb-1">
               Senha
@@ -120,7 +142,11 @@ const AddUserModal: React.FC<Props> = ({ isOpen, onClose, onUserAdded }) => {
           </div>
         </div>
         <div className="mt-6 flex justify-end space-x-3">
-          <Button variant="secondary" onClick={() => { clearFields(); onClose(); }} disabled={isSubmitting}>
+          <Button
+            variant="secondary"
+            onClick={() => { clearFields(); onClose(); }}
+            disabled={isSubmitting}
+          >
             Cancelar
           </Button>
           <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting}>
