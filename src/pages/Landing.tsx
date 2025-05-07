@@ -129,10 +129,19 @@ const Landing: React.FC = () => {
 
             <QueryOption
               icon={<UserPlus size={32} className="text-white" />}
-              title="Criar Logins"
+              title="Gestão de Usuarios"
               description="Gerencie e crie novos logins de acesso."
               onClick={() => navigate("/dashboard/create-logins")}
               disabled={!(isAuthenticated && user?.id === 1)}
+            />
+
+            <QueryOption
+              icon={<UserPlus size={32} className="text-white" />}
+              title="Gestão de Recargas"
+              description="Gerencie e crie novos logins de acesso."
+              onClick={() => navigate("/dashboard/create-logins")}
+              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))
+              }
             />
           </motion.div>
         </motion.div>
