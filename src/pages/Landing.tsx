@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Database, Search, LogIn, UserPlus } from "lucide-react";
+import { Database, Search, LogIn, UserPlus, UserReload } from "lucide-react";
 import EuropaLogo from "../components/EuropaLogo";
 import Button from "../components/Button";
 import { useAuth } from "../context/AuthContext";
@@ -133,15 +133,15 @@ const Landing: React.FC = () => {
               description="Gerencie e crie novos logins de acesso."
               onClick={() => navigate("/dashboard/create-logins")}
               disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))
-                
+
               }
             />
 
             <QueryOption
               icon={<UserPlus size={32} className="text-white" />}
               title="Gestão de Recargas"
-              description="Gerencie e crie novos logins de acesso."
-              onClick={() => navigate("/dashboard/create-logins")}
+              description="Administração eficiente de recargas de saldo."
+              onClick={() => navigate("/dashboard/recharge-user")}
               disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))
               }
             />

@@ -13,8 +13,9 @@ import Landing from "./pages/Landing";
 import BatchQueryDashboard from "./pages/BatchQueryDashboard";
 import IndividualQueryDashboard from "./pages/IndividualQueryDashboard";
 import CreateLogins from "./pages/CreateLogins";
-import { ToastContainer } from 'react-toastify'; // <<< ADICIONADO IMPORT
-import 'react-toastify/dist/ReactToastify.css'; // <<< ADICIONADO IMPORT CSS
+import UserRecharge from "./pages/UserRecharge"; // <<< ADICIONADO IMPORT PARA NOVA PÁGINA
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   return (
@@ -47,9 +48,17 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/dashboard/recharge-user" // Rota existente que será usada para UserRecharge
+            element={
+              <ProtectedRoute>
+                <UserRecharge /> {/* <<< ALTERADO PARA RENDERIZAR UserRecharge */}
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        <ToastContainer position="bottom-right" autoClose={3000} /> {/* <<< ADICIONADO COMPONENTE */}
+        <ToastContainer position="bottom-right" autoClose={3000} />
       </Router>
     </AuthProvider>
   );
