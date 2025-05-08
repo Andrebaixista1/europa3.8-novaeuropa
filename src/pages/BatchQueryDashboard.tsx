@@ -10,30 +10,40 @@ import {
   Trash2,
   PlusCircle,
   AlertTriangle,
+  Zap, // Ícone para Higienizar
+  Download as DownloadIcon, // Ícone para Download
+  Loader2, // Ícone de loading
 } from "lucide-react";
 import DashboardHeader from "../components/DashboardHeader";
 import Button from "../components/Button";
-import LoadingSpinner from "../components/LoadingSpinner";
-import { useAuth } from "../context/AuthContext"; // Alterado para usar o AuthContext real
+import LoadingSpinner from "../components/LoadingSpinner"; 
+import { useAuth } from "../context/AuthContext";
 
 const API_BASE = "http://177.153.62.236:5678/";
 
 interface AccountLimits {
   id: number;
   login: string;
-  total_loaded: number; 
-  available_limit: number; 
-  queries_performed: number; 
+  total_loaded: number;
+  available_limit: number;
+  queries_performed: number;
 }
 
 interface Lote {
   nome_arquivo: string;
   qtd_linhas: number;
-  status_api: string;
+}
+
+interface ActionState {
+  [fileName: string]: {
+    isLoading: boolean;
+    error: string | null;
+    success: string | null;
+  };
 }
 
 const BatchQueryDashboard: React.FC = () => {
-  const { user } = useAuth(); 
+  const { user } = useAuth();
   const userId = user?.id;
 
   const [accountLimits, setAccountLimits] = useState<AccountLimits | null>(null);
@@ -45,6 +55,7 @@ const BatchQueryDashboard: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isAddingFile, setIsAddingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [actionStates, setActionStates] = useState<ActionState>({}); // Estado unificado para ações
 
   const fetchAccountLimits = useCallback(async () => {
     if (!userId) {
@@ -57,16 +68,13 @@ const BatchQueryDashboard: React.FC = () => {
     try {
       const response = await fetch(`${API_BASE}/webhook/api/saldo`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" }, // Adicionado Content-Type JSON
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: userId }),
       });
-
       const responseText = await response.text();
-
       if (!response.ok) {
         throw new Error(`Erro ao buscar saldo: ${response.statusText} - ${responseText || "Sem corpo de erro"}`);
       }
-
       if (!responseText) {
         console.warn("API de saldo retornou uma resposta vazia.");
         setAccountLimits(null);
@@ -76,16 +84,15 @@ const BatchQueryDashboard: React.FC = () => {
           setAccountLimits({
             id: dataFromApi.id,
             login: dataFromApi.login,
-            total_loaded: dataFromApi.total_carregado, 
-            available_limit: dataFromApi.limite_disponivel, 
-            queries_performed: dataFromApi.consultas_realizada, 
-          }); 
+            total_loaded: dataFromApi.total_carregado,
+            available_limit: dataFromApi.limite_disponivel,
+            queries_performed: dataFromApi.consultas_realizada,
+          });
         } catch (parseError) {
           console.error("Falha ao fazer parse do JSON da API de saldo:", parseError);
           throw new Error(`Falha ao processar resposta do saldo: ${parseError instanceof Error ? parseError.message : "Formato inválido."}`);
         }
       }
-
     } catch (error) {
       console.error("Falha ao buscar limites da conta:", error);
       setLimitError(`Não foi possível carregar os dados de saldo. ${error instanceof Error ? error.message : "Tente novamente mais tarde."}`);
@@ -145,20 +152,16 @@ const BatchQueryDashboard: React.FC = () => {
     const formData = new FormData();
     formData.append("id", userId.toString());
     formData.append("file", selectedFile);
-
     try {
       const responseCriaLote = await fetch(`${API_BASE}/webhook/api/cria-lote`, {
         method: "POST",
         body: formData,
       });
-
       if (!responseCriaLote.ok) {
         const errorData = await responseCriaLote.text();
         throw new Error(`Erro ao criar lote: ${responseCriaLote.statusText} - ${errorData}`);
       }
-      
       await fetchLotes();
-
     } catch (error) {
       console.error("Erro ao adicionar arquivo e processar:", error);
       alert(`Falha ao adicionar arquivo: ${error instanceof Error ? error.message : "Tente novamente."}`);
@@ -177,12 +180,72 @@ const BatchQueryDashboard: React.FC = () => {
       fileInputRef.current.value = "";
     }
   };
-  
+
+  const handleAction = async (actionType: "higienizar" | "download", nomeArquivo: string) => {
+    if (!userId) {
+      alert("ID do usuário não encontrado.");
+      return;
+    }
+    const actionKey = `${actionType}-${nomeArquivo}`;
+    setActionStates(prev => ({ 
+      ...prev, 
+      [actionKey]: { isLoading: true, error: null, success: null } 
+    }));
+
+    try {
+      const endpoint = actionType === "higienizar" ? `${API_BASE}/webhook/api/higienizar` : `${API_BASE}/webhook/api/download`;
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id_usuario: userId, nome_arquivo: nomeArquivo }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Erro ao ${actionType} o arquivo ${nomeArquivo}`);
+      }
+
+      if (actionType === "download") {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        // Tenta extrair a extensão original ou usa .csv como padrão
+        const originalExtension = nomeArquivo.split(".").pop() || "csv";
+        const downloadFileName = `${nomeArquivo.substring(0, nomeArquivo.lastIndexOf(".") || nomeArquivo.length)}_higienizado.${originalExtension}`;
+        a.download = downloadFileName; 
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        setActionStates(prev => ({ 
+          ...prev, 
+          [actionKey]: { isLoading: false, error: null, success: "Download iniciado." } 
+        }));
+      } else { // Higienizar
+        const successText = await response.text();
+        setActionStates(prev => ({ 
+          ...prev, 
+          [actionKey]: { isLoading: false, error: null, success: successText || "Arquivo higienizado com sucesso!" } 
+        }));
+        // Opcional: recarregar a lista de lotes ou atualizar o status do lote específico
+        // await fetchLotes(); 
+      }
+
+    } catch (error) {
+      console.error(`Falha ao ${actionType} arquivo:`, error);
+      setActionStates(prev => ({ 
+        ...prev, 
+        [actionKey]: { isLoading: false, error: error instanceof Error ? error.message : "Erro desconhecido", success: null } 
+      }));
+    }
+  };
+
   const cardData = [
     {
       icon: <DollarSign size={20} className="text-primary-600" />,
       title: "Total Carregado",
-      valueKey: "total_loaded", 
+      valueKey: "total_loaded",
       subtitle: "Créditos carregados",
     },
     {
@@ -200,10 +263,17 @@ const BatchQueryDashboard: React.FC = () => {
     {
       icon: <UserIcon size={20} className="text-primary-600" />,
       title: "Login",
-      value: user?.username ?? "N/A", 
+      value: user?.username ?? "N/A",
       subtitle: "Usuário logado",
     },
   ];
+
+  const getStatusLote = (lote: Lote) => {
+    if (accountLimits && lote.qtd_linhas > accountLimits.available_limit) {
+      return { text: "Acima do limite", color: "text-red-600 bg-red-100" };
+    }
+    return { text: "Pendente", color: "text-yellow-600 bg-yellow-100" };
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
@@ -211,7 +281,7 @@ const BatchQueryDashboard: React.FC = () => {
       <div className="container mx-auto px-4 py-8 flex-1">
         <div className="max-w-4xl mx-auto grid gap-6">
           {limitError && (
-            <motion.div 
+            <motion.div
               className="bg-error-100 border border-error-400 text-error-700 px-4 py-3 rounded relative mb-4"
               initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
             >
@@ -266,14 +336,13 @@ const BatchQueryDashboard: React.FC = () => {
             <p className="text-neutral-600 text-center mb-6">
               Selecione arquivos CSV ou Excel. Após selecionar um arquivo, clique em "Adicionar Arquivo".
             </p>
-            
             <div className="border-2 border-dashed border-neutral-300 rounded-lg p-8 text-center bg-neutral-50 mb-6">
               <div className="mb-4 flex justify-center">
                 <Upload size={40} className="text-primary-500" />
               </div>
               <p className="mb-4 text-neutral-600">
-                {selectedFile ? 
-                  `Arquivo selecionado: ${selectedFile.name}` : 
+                {selectedFile ?
+                  `Arquivo selecionado: ${selectedFile.name}` :
                   "Arraste e solte seu arquivo aqui, ou clique para procurar"
                 }
               </p>
@@ -293,7 +362,7 @@ const BatchQueryDashboard: React.FC = () => {
                     className="cursor-pointer w-full"
                     icon={<FileText size={18} />}
                     disabled={isAddingFile}
-                    onClick={() => fileInputRef.current?.click()} 
+                    onClick={() => fileInputRef.current?.click()}
                   >
                     Procurar Arquivos
                   </Button>
@@ -311,7 +380,6 @@ const BatchQueryDashboard: React.FC = () => {
                 )}
               </div>
             </div>
-
             {selectedFile && (
               <div className="flex justify-center mt-6">
                 <Button
@@ -345,23 +413,62 @@ const BatchQueryDashboard: React.FC = () => {
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Nome do Arquivo</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Qtd. Linhas</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Status API</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-neutral-200">
                   {isLoadingLotes && (
-                    <tr><td colSpan={3} className="text-center py-4"><LoadingSpinner /> Carregando lotes...</td></tr>
+                    <tr><td colSpan={4} className="text-center py-4"><LoadingSpinner /> Carregando lotes...</td></tr>
                   )}
                   {!isLoadingLotes && !lotesError && lotes.length === 0 && (
-                    <tr><td colSpan={3} className="text-center py-4">Nenhum lote encontrado.</td></tr>
+                    <tr><td colSpan={4} className="text-center py-4">Nenhum lote encontrado.</td></tr>
                   )}
-                  {!isLoadingLotes && !lotesError && lotes.map((lote, index) => (
-                    <tr key={`${lote.nome_arquivo}-${index}`}> 
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{lote.nome_arquivo}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">{lote.qtd_linhas}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">{lote.status_api}</td>
-                    </tr>
-                  ))}
+                  {!isLoadingLotes && !lotesError && lotes.map((lote, index) => {
+                    const statusInfo = getStatusLote(lote);
+                    const higienizarActionKey = `higienizar-${lote.nome_arquivo}`;
+                    const downloadActionKey = `download-${lote.nome_arquivo}`;
+                    const higienizarState = actionStates[higienizarActionKey] || { isLoading: false, error: null, success: null };
+                    const downloadState = actionStates[downloadActionKey] || { isLoading: false, error: null, success: null };
+
+                    return (
+                      <tr key={`${lote.nome_arquivo}-${index}`}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{lote.nome_arquivo}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">{lote.qtd_linhas}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusInfo.color}`}>
+                            {statusInfo.text}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                          <div className="flex items-center space-x-2">
+                            <Button 
+                              variant="icon" 
+                              size="sm" 
+                              onClick={() => handleAction("higienizar", lote.nome_arquivo)}
+                              disabled={higienizarState.isLoading || downloadState.isLoading}
+                              title="Higienizar"
+                            >
+                              {higienizarState.isLoading ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+                            </Button>
+                            <Button 
+                              variant="icon" 
+                              size="sm" 
+                              onClick={() => handleAction("download", lote.nome_arquivo)}
+                              disabled={downloadState.isLoading || higienizarState.isLoading}
+                              title="Download"
+                            >
+                              {downloadState.isLoading ? <Loader2 size={16} className="animate-spin" /> : <DownloadIcon size={16} />}
+                            </Button>
+                          </div>
+                          {higienizarState.error && <p className="text-xs text-red-500 mt-1">{higienizarState.error}</p>}
+                          {higienizarState.success && <p className="text-xs text-green-500 mt-1">{higienizarState.success}</p>}
+                          {downloadState.error && <p className="text-xs text-red-500 mt-1">{downloadState.error}</p>}
+                          {downloadState.success && <p className="text-xs text-green-500 mt-1">{downloadState.success}</p>}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
