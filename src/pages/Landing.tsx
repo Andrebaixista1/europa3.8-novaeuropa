@@ -117,7 +117,7 @@ const Landing: React.FC = () => {
               }
               description="Faça consultas em lote para múltiplos cadastros de uma só vez."
               onClick={handleBatchQuery}
-              disabled={true}
+              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))}
             />
 
             <QueryOption
@@ -132,9 +132,7 @@ const Landing: React.FC = () => {
               title="Gestão de Usuarios"
               description="Gerencie e crie novos logins de acesso."
               onClick={() => navigate("/dashboard/create-logins")}
-              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))
-
-              }
+              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))}
             />
 
             <QueryOption
