@@ -13,6 +13,8 @@ import {
   Zap, // Ícone para Higienizar
   Download as DownloadIcon, // Ícone para Download
   Loader2, // Ícone de loading
+  CheckCircle, // Ícone de sucesso
+  XCircle, // Ícone de erro
 } from "lucide-react";
 import DashboardHeader from "../components/DashboardHeader";
 import Button from "../components/Button";
@@ -29,16 +31,26 @@ interface AccountLimits {
   queries_performed: number;
 }
 
+interface HigienizacaoResult {
+  Higienizados: number;
+  Erros: number;
+  Finalizados: number;
+  Status: string; // "Finalizado", "Erro", etc.
+  Message?: string; // Mensagem de erro detalhada da API
+}
+
 interface Lote {
   nome_arquivo: string;
   qtd_linhas: number;
+  higienizacao_status?: string; // Novo campo para o status principal da higienização (ex: "Finalizado")
+  higienizacao_resultado?: HigienizacaoResult | null; // Para armazenar o objeto de resultado completo
 }
 
 interface ActionState {
-  [fileName: string]: {
+  [actionKey: string]: { // Chave agora é actionType-fileName
     isLoading: boolean;
     error: string | null;
-    success: string | null;
+    // success: string | null; // Removido, o resultado da higienização será exibido em sua própria coluna
   };
 }
 
@@ -55,7 +67,7 @@ const BatchQueryDashboard: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isAddingFile, setIsAddingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [actionStates, setActionStates] = useState<ActionState>({}); // Estado unificado para ações
+  const [actionStates, setActionStates] = useState<ActionState>({});
 
   const fetchAccountLimits = useCallback(async () => {
     if (!userId) {
@@ -121,7 +133,13 @@ const BatchQueryDashboard: React.FC = () => {
         throw new Error(`Erro ao buscar lotes: ${response.statusText} - ${errorData}`);
       }
       const data = await response.json();
-      setLotes(data);
+      // Inicializa lotes com campos de higienização vazios
+      const initialLotes = data.map((lote: Omit<Lote, 'higienizacao_status' | 'higienizacao_resultado'>) => ({
+        ...lote,
+        higienizacao_status: undefined,
+        higienizacao_resultado: null,
+      }));
+      setLotes(initialLotes);
     } catch (error) {
       console.error("Falha ao buscar lotes:", error);
       setLotesError(`Não foi possível carregar os dados dos lotes. ${error instanceof Error ? error.message : "Tente novamente mais tarde."}`);
@@ -186,33 +204,44 @@ const BatchQueryDashboard: React.FC = () => {
       alert("ID do usuário não encontrado.");
       return;
     }
+    if (!accountLimits && actionType === "higienizar") { // Checagem de accountLimits relevante para higienizar
+      alert("Limites da conta não carregados. Tente novamente mais tarde.");
+      return;
+    }
+
     const actionKey = `${actionType}-${nomeArquivo}`;
     setActionStates(prev => ({ 
       ...prev, 
-      [actionKey]: { isLoading: true, error: null, success: null } 
+      [actionKey]: { isLoading: true, error: null } 
     }));
 
     try {
       const endpoint = actionType === "higienizar" ? `${API_BASE}/webhook/api/higienizar` : `${API_BASE}/webhook/api/download`;
+      const bodyPayload = {
+        id_usuario: userId,
+        nome_arquivo: nomeArquivo,
+        limite_disponivel: accountLimits?.available_limit, 
+      };
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id_usuario: userId, nome_arquivo: nomeArquivo }),
+        body: JSON.stringify(bodyPayload),
       });
 
+      const responseText = await response.text();
+
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `Erro ao ${actionType} o arquivo ${nomeArquivo}`);
+        throw new Error(responseText || `Erro ao ${actionType} o arquivo ${nomeArquivo}`);
       }
 
       if (actionType === "download") {
-        const blob = await response.blob();
+        const blob = await response.blob(); // Assumindo que a API de download retorna o blob diretamente
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        // Tenta extrair a extensão original ou usa .csv como padrão
         const originalExtension = nomeArquivo.split(".").pop() || "csv";
-        const downloadFileName = `${nomeArquivo.substring(0, nomeArquivo.lastIndexOf(".") || nomeArquivo.length)}_higienizado.${originalExtension}`;
+        const downloadFileName = `${nomeArquivo.substring(0, nomeArquivo.lastIndexOf(".") || nomeArquivo.length)}.${originalExtension}`;
         a.download = downloadFileName; 
         document.body.appendChild(a);
         a.click();
@@ -220,24 +249,38 @@ const BatchQueryDashboard: React.FC = () => {
         window.URL.revokeObjectURL(url);
         setActionStates(prev => ({ 
           ...prev, 
-          [actionKey]: { isLoading: false, error: null, success: "Download iniciado." } 
+          [actionKey]: { isLoading: false, error: null } 
         }));
       } else { // Higienizar
-        const successText = await response.text();
+        const resultadoHigienizacao: HigienizacaoResult = JSON.parse(responseText);
+        setLotes(prevLotes => 
+          prevLotes.map(lote => 
+            lote.nome_arquivo === nomeArquivo 
+              ? { ...lote, higienizacao_status: resultadoHigienizacao.Status, higienizacao_resultado: resultadoHigienizacao } 
+              : lote
+          )
+        );
         setActionStates(prev => ({ 
           ...prev, 
-          [actionKey]: { isLoading: false, error: null, success: successText || "Arquivo higienizado com sucesso!" } 
+          [actionKey]: { isLoading: false, error: null } 
         }));
-        // Opcional: recarregar a lista de lotes ou atualizar o status do lote específico
-        // await fetchLotes(); 
       }
 
     } catch (error) {
       console.error(`Falha ao ${actionType} arquivo:`, error);
       setActionStates(prev => ({ 
         ...prev, 
-        [actionKey]: { isLoading: false, error: error instanceof Error ? error.message : "Erro desconhecido", success: null } 
+        [actionKey]: { isLoading: false, error: error instanceof Error ? error.message : "Erro desconhecido" }
       }));
+       if (actionType === "higienizar") {
+        setLotes(prevLotes => 
+          prevLotes.map(lote => 
+            lote.nome_arquivo === nomeArquivo 
+              ? { ...lote, higienizacao_status: "Erro", higienizacao_resultado: { Status: "Erro", Message: error instanceof Error ? error.message : "Erro desconhecido", Higienizados: 0, Erros: lote.qtd_linhas, Finalizados: 0 } } 
+              : lote
+          )
+        );
+      }
     }
   };
 
@@ -268,7 +311,13 @@ const BatchQueryDashboard: React.FC = () => {
     },
   ];
 
-  const getStatusLote = (lote: Lote) => {
+  const getStatusLoteDisplay = (lote: Lote) => {
+    if (lote.higienizacao_status === "Finalizado") {
+      return { text: "Finalizado", color: "text-green-600 bg-green-100" };
+    }
+    if (lote.higienizacao_status === "Erro") {
+        return { text: "Erro na Higienização", color: "text-red-600 bg-red-100" };
+    }
     if (accountLimits && lote.qtd_linhas > accountLimits.available_limit) {
       return { text: "Acima do limite", color: "text-red-600 bg-red-100" };
     }
@@ -279,7 +328,7 @@ const BatchQueryDashboard: React.FC = () => {
     <div className="min-h-screen bg-neutral-50 flex flex-col">
       <DashboardHeader title="Consulta em Lote" />
       <div className="container mx-auto px-4 py-8 flex-1">
-        <div className="max-w-4xl mx-auto grid gap-6">
+        <div className="max-w-5xl mx-auto grid gap-6"> {/* Aumentado max-w para acomodar nova coluna */}
           {limitError && (
             <motion.div
               className="bg-error-100 border border-error-400 text-error-700 px-4 py-3 rounded relative mb-4"
@@ -414,22 +463,23 @@ const BatchQueryDashboard: React.FC = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Nome do Arquivo</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Qtd. Linhas</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Higienizado / Erro</th> {/* Nova Coluna */}
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-neutral-200">
                   {isLoadingLotes && (
-                    <tr><td colSpan={4} className="text-center py-4"><LoadingSpinner /> Carregando lotes...</td></tr>
+                    <tr><td colSpan={5} className="text-center py-4"><LoadingSpinner /> Carregando lotes...</td></tr>
                   )}
                   {!isLoadingLotes && !lotesError && lotes.length === 0 && (
-                    <tr><td colSpan={4} className="text-center py-4">Nenhum lote encontrado.</td></tr>
+                    <tr><td colSpan={5} className="text-center py-4">Nenhum lote encontrado.</td></tr>
                   )}
                   {!isLoadingLotes && !lotesError && lotes.map((lote, index) => {
-                    const statusInfo = getStatusLote(lote);
+                    const statusInfo = getStatusLoteDisplay(lote);
                     const higienizarActionKey = `higienizar-${lote.nome_arquivo}`;
                     const downloadActionKey = `download-${lote.nome_arquivo}`;
-                    const higienizarState = actionStates[higienizarActionKey] || { isLoading: false, error: null, success: null };
-                    const downloadState = actionStates[downloadActionKey] || { isLoading: false, error: null, success: null };
+                    const higienizarState = actionStates[higienizarActionKey] || { isLoading: false, error: null };
+                    const downloadState = actionStates[downloadActionKey] || { isLoading: false, error: null };
 
                     return (
                       <tr key={`${lote.nome_arquivo}-${index}`}>
@@ -441,12 +491,27 @@ const BatchQueryDashboard: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                          {lote.higienizacao_resultado ? (
+                            <div className="text-xs">
+                              <p>Status: {lote.higienizacao_resultado.Status}</p>
+                              <p>Higienizados: {lote.higienizacao_resultado.Higienizados}</p>
+                              <p>Erros: {lote.higienizacao_resultado.Erros}</p>
+                              <p>Finalizados: {lote.higienizacao_resultado.Finalizados}</p>
+                              {lote.higienizacao_resultado.Message && <p className="text-red-500">Msg: {lote.higienizacao_resultado.Message}</p>}
+                            </div>
+                          ) : higienizarState.error ? (
+                            <p className="text-xs text-red-500">Falha: {higienizarState.error}</p>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
                           <div className="flex items-center space-x-2">
                             <Button 
                               variant="icon" 
                               size="sm" 
                               onClick={() => handleAction("higienizar", lote.nome_arquivo)}
-                              disabled={higienizarState.isLoading || downloadState.isLoading}
+                              disabled={higienizarState.isLoading || downloadState.isLoading || lote.higienizacao_status === "Finalizado"}
                               title="Higienizar"
                             >
                               {higienizarState.isLoading ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
@@ -455,16 +520,14 @@ const BatchQueryDashboard: React.FC = () => {
                               variant="icon" 
                               size="sm" 
                               onClick={() => handleAction("download", lote.nome_arquivo)}
-                              disabled={downloadState.isLoading || higienizarState.isLoading}
-                              title="Download"
+                              disabled={downloadState.isLoading || higienizarState.isLoading || lote.higienizacao_status !== "Finalizado"}
+                              title="Download (apenas após higienização bem-sucedida)"
                             >
                               {downloadState.isLoading ? <Loader2 size={16} className="animate-spin" /> : <DownloadIcon size={16} />}
                             </Button>
                           </div>
-                          {higienizarState.error && <p className="text-xs text-red-500 mt-1">{higienizarState.error}</p>}
-                          {higienizarState.success && <p className="text-xs text-green-500 mt-1">{higienizarState.success}</p>}
-                          {downloadState.error && <p className="text-xs text-red-500 mt-1">{downloadState.error}</p>}
-                          {downloadState.success && <p className="text-xs text-green-500 mt-1">{downloadState.success}</p>}
+                          {/* Mensagens de erro de chamada de API de download ainda podem ser mostradas aqui se necessário, ou globalmente */}
+                          {downloadState.error && <p className="text-xs text-red-500 mt-1">Erro Download: {downloadState.error}</p>}
                         </td>
                       </tr>
                     );
