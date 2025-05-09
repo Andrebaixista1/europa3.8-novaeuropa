@@ -8,7 +8,7 @@ import AddUserModal from "../components/AddUserModal";
 import DeleteUserModal from "../components/DeleteUserModal";
 
 const API_BASE = import.meta.env.DEV
-  ? "http://177.153.62.236:5678/"
+  ? "http://177.153.62.236:5679/"
   : "";
 
 interface Usuario {

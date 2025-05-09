@@ -9,7 +9,7 @@ import Button from "../components/Button";
 import AddRechargeModal from "../components/AddRechargeModal"; // Importar o modal
 
 const API_BASE = import.meta.env.DEV
-  ? "http://177.153.62.236:5678/"
+  ? "http://177.153.62.236:5679/"
   : "";
 
 interface RechargeEntry {

@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/webhook': {
-        target: 'http://177.153.62.236:5678',
+        target: 'http://177.153.62.236:5679',
         changeOrigin: true,
         secure: false,
         logLevel: 'debug',

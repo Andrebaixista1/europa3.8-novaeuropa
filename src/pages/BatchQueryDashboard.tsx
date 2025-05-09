@@ -21,11 +21,7 @@ import Button from "../components/Button";
 import LoadingSpinner from "../components/LoadingSpinner"; 
 import { useAuth } from "../context/AuthContext";
 
-// CORREÇÃO APLICADA AQUI:
-// Em desenvolvimento, usa o IP direto. Em produção, usa caminho relativo para o proxy do Vercel funcionar.
-const API_BASE = import.meta.env.DEV
-  ? "http://177.153.62.236:5678/"
-  : ""; // Em produção, o Vercel usará o proxy definido no vercel.json
+const API_BASE = "http://177.153.62.236:5679/";
 
 interface AccountLimits {
   id: number;
@@ -54,6 +50,7 @@ interface ActionState {
   [actionKey: string]: { // Chave agora é actionType-fileName
     isLoading: boolean;
     error: string | null;
+    // success: string | null; // Removido, o resultado da higienização será exibido em sua própria coluna
   };
 }
 
@@ -136,6 +133,7 @@ const BatchQueryDashboard: React.FC = () => {
         throw new Error(`Erro ao buscar lotes: ${response.statusText} - ${errorData}`);
       }
       const data = await response.json();
+      // Inicializa lotes com campos de higienização vazios
       const initialLotes = data.map((lote: Omit<Lote, 'higienizacao_status' | 'higienizacao_resultado'>) => ({
         ...lote,
         higienizacao_status: undefined,
@@ -206,7 +204,7 @@ const BatchQueryDashboard: React.FC = () => {
       alert("ID do usuário não encontrado.");
       return;
     }
-    if (!accountLimits && actionType === "higienizar") {
+    if (!accountLimits && actionType === "higienizar") { // Checagem de accountLimits relevante para higienizar
       alert("Limites da conta não carregados. Tente novamente mais tarde.");
       return;
     }
@@ -238,9 +236,7 @@ const BatchQueryDashboard: React.FC = () => {
       }
 
       if (actionType === "download") {
-        // Para download, a API deve retornar o blob diretamente ou um JSON com URL para o blob
-        // Este exemplo assume que retorna o blob diretamente.
-        const blob = await response.blob(); 
+        const blob = await response.blob(); // Assumindo que a API de download retorna o blob diretamente
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -332,7 +328,7 @@ const BatchQueryDashboard: React.FC = () => {
     <div className="min-h-screen bg-neutral-50 flex flex-col">
       <DashboardHeader title="Consulta em Lote" />
       <div className="container mx-auto px-4 py-8 flex-1">
-        <div className="max-w-5xl mx-auto grid gap-6">
+        <div className="max-w-5xl mx-auto grid gap-6"> {/* Aumentado max-w para acomodar nova coluna */}
           {limitError && (
             <motion.div
               className="bg-error-100 border border-error-400 text-error-700 px-4 py-3 rounded relative mb-4"
@@ -426,130 +422,120 @@ const BatchQueryDashboard: React.FC = () => {
                     onClick={handleRemoveSelectedFile}
                     disabled={isAddingFile}
                     icon={<Trash2 size={18} />}
+                    className="w-full sm:w-auto"
                   >
                     Remover Seleção
                   </Button>
                 )}
               </div>
             </div>
-            <Button
-              variant="primary"
-              fullWidth
-              onClick={handleAddFileAndProcess}
-              disabled={!selectedFile || isAddingFile}
-              icon={isAddingFile ? <LoadingSpinner size="sm" /> : <PlusCircle size={18} />}
-            >
-              {isAddingFile ? "Adicionando..." : "Adicionar Arquivo e Iniciar Processamento"}
-            </Button>
+            {selectedFile && (
+              <div className="flex justify-center mt-6">
+                <Button
+                  variant="primary"
+                  onClick={handleAddFileAndProcess}
+                  disabled={isAddingFile || !selectedFile}
+                  icon={isAddingFile ? <LoadingSpinner size="sm" /> : <PlusCircle size={18} />}
+                  className="w-full sm:w-auto"
+                >
+                  {isAddingFile ? "Adicionando..." : "Adicionar Arquivo"}
+                </Button>
+              </div>
+            )}
           </motion.div>
 
-          {lotesError && (
-            <motion.div
-              className="bg-error-100 border border-error-400 text-error-700 px-4 py-3 rounded relative mt-6"
-              initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-            >
-              <AlertTriangle size={20} className="inline mr-2" />
-              <strong className="font-bold">Erro ao carregar lotes: </strong>
-              <span className="block sm:inline">{lotesError}</span>
-            </motion.div>
-          )}
-
-          {isLoadingLotes && !lotesError && (
-            <div className="flex justify-center items-center mt-8">
-              <LoadingSpinner size="lg" />
-              <p className="ml-3 text-neutral-600">Carregando histórico de lotes...</p>
-            </div>
-          )}
-
-          {!isLoadingLotes && !lotesError && lotes.length === 0 && (
-            <motion.div 
-              className="text-center text-neutral-500 mt-8 p-6 bg-white border rounded-xl shadow"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            >
-              Nenhum lote encontrado. Faça o upload de um arquivo para começar.
-            </motion.div>
-          )}
-
-          {!isLoadingLotes && lotes.length > 0 && (
-            <motion.div
-              className="bg-white border border-neutral-200 rounded-xl shadow mt-6 overflow-x-auto"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <h3 className="text-xl font-semibold p-6 border-b border-neutral-200">
-                Histórico de Lotes
-              </h3>
-              <table className="w-full min-w-[800px]">
+          <motion.div
+            className="bg-white border border-neutral-200 rounded-xl shadow p-8 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <h3 className="text-xl font-semibold mb-4 text-neutral-700">Histórico de Lotes</h3>
+            {lotesError && (
+                <div className="bg-error-100 border border-error-400 text-error-700 px-4 py-3 rounded relative mb-2">
+                    <AlertTriangle size={18} className="inline mr-1" /> {lotesError}
+                </div>
+            )}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-neutral-200">
                 <thead className="bg-neutral-50">
                   <tr>
-                    <th className="p-4 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Nome do Arquivo</th>
-                    <th className="p-4 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Qtd. Linhas</th>
-                    <th className="p-4 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Status</th>
-                    <th className="p-4 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Higienizado / Erro</th>
-                    <th className="p-4 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Ações</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Nome do Arquivo</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Qtd. Linhas</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Higienizado / Erro</th> {/* Nova Coluna */}
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-200">
-                  {lotes.map((lote) => {
-                    const statusDisplay = getStatusLoteDisplay(lote);
-                    const higienizacaoKey = `higienizar-${lote.nome_arquivo}`;
-                    const downloadKey = `download-${lote.nome_arquivo}`;
-                    const isHigienizando = actionStates[higienizacaoKey]?.isLoading;
-                    const isDownloading = actionStates[downloadKey]?.isLoading;
-                    const higienizacaoError = actionStates[higienizacaoKey]?.error;
-                    const downloadError = actionStates[downloadKey]?.error;
-
-                    let higienizadoInfo = "-";
-                    if (lote.higienizacao_resultado) {
-                      if (lote.higienizacao_resultado.Status === "Finalizado") {
-                        higienizadoInfo = `${lote.higienizacao_resultado.Higienizados} higienizados, ${lote.higienizacao_resultado.Erros} erros`;
-                      } else if (lote.higienizacao_resultado.Status === "Erro") {
-                        higienizadoInfo = `Erro: ${lote.higienizacao_resultado.Message || "Detalhes não disponíveis"}`;
-                      }
-                    }
+                <tbody className="bg-white divide-y divide-neutral-200">
+                  {isLoadingLotes && (
+                    <tr><td colSpan={5} className="text-center py-4"><LoadingSpinner /> Carregando lotes...</td></tr>
+                  )}
+                  {!isLoadingLotes && !lotesError && lotes.length === 0 && (
+                    <tr><td colSpan={5} className="text-center py-4">Nenhum lote encontrado.</td></tr>
+                  )}
+                  {!isLoadingLotes && !lotesError && lotes.map((lote, index) => {
+                    const statusInfo = getStatusLoteDisplay(lote);
+                    const higienizarActionKey = `higienizar-${lote.nome_arquivo}`;
+                    const downloadActionKey = `download-${lote.nome_arquivo}`;
+                    const higienizarState = actionStates[higienizarActionKey] || { isLoading: false, error: null };
+                    const downloadState = actionStates[downloadActionKey] || { isLoading: false, error: null };
 
                     return (
-                      <tr key={lote.nome_arquivo}>
-                        <td className="p-4 whitespace-nowrap text-sm font-medium text-neutral-900">{lote.nome_arquivo}</td>
-                        <td className="p-4 whitespace-nowrap text-sm text-neutral-500">{lote.qtd_linhas}</td>
-                        <td className="p-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusDisplay.color}`}>
-                            {statusDisplay.text}
+                      <tr key={`${lote.nome_arquivo}-${index}`}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{lote.nome_arquivo}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">{lote.qtd_linhas}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusInfo.color}`}>
+                            {statusInfo.text}
                           </span>
                         </td>
-                        <td className="p-4 whitespace-nowrap text-sm text-neutral-500">
-                          {isHigienizando ? <LoadingSpinner size="xs" /> : higienizadoInfo}
-                          {higienizacaoError && <span className="text-xs text-red-500 block">{higienizacaoError}</span>}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                          {lote.higienizacao_resultado ? (
+                            <div className="text-xs">
+                              <p>Status: {lote.higienizacao_resultado.Status}</p>
+                              <p>Higienizados: {lote.higienizacao_resultado.Higienizados}</p>
+                              <p>Erros: {lote.higienizacao_resultado.Erros}</p>
+                              <p>Finalizados: {lote.higienizacao_resultado.Finalizados}</p>
+                              {lote.higienizacao_resultado.Message && <p className="text-red-500">Msg: {lote.higienizacao_resultado.Message}</p>}
+                            </div>
+                          ) : higienizarState.error ? (
+                            <p className="text-xs text-red-500">Falha: {higienizarState.error}</p>
+                          ) : (
+                            "-"
+                          )}
                         </td>
-                        <td className="p-4 whitespace-nowrap text-sm font-medium space-x-2">
-                          <Button
-                            variant="primary_outline"
-                            size="sm"
-                            onClick={() => handleAction("higienizar", lote.nome_arquivo)}
-                            disabled={isHigienizando || isDownloading || statusDisplay.text === "Acima do limite" || lote.higienizacao_status === "Finalizado"}
-                            icon={isHigienizando ? <LoadingSpinner size="xs" /> : <Zap size={16} />}
-                          >
-                            {isHigienizando ? "Processando..." : "Higienizar"}
-                          </Button>
-                          <Button
-                            variant="secondary_outline"
-                            size="sm"
-                            onClick={() => handleAction("download", lote.nome_arquivo)}
-                            disabled={isDownloading || isHigienizando || lote.higienizacao_status !== "Finalizado"}
-                            icon={isDownloading ? <LoadingSpinner size="xs" /> : <DownloadIcon size={16} />}
-                          >
-                            {isDownloading ? "Baixando..." : "Download"}
-                          </Button>
-                          {downloadError && <span className="text-xs text-red-500 block">{downloadError}</span>}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                          <div className="flex items-center space-x-2">
+                            <Button 
+                              variant="icon" 
+                              size="sm" 
+                              onClick={() => handleAction("higienizar", lote.nome_arquivo)}
+                              disabled={higienizarState.isLoading || downloadState.isLoading || lote.higienizacao_status === "Finalizado"}
+                              title="Higienizar"
+                            >
+                              {higienizarState.isLoading ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+                            </Button>
+                            <Button 
+                              variant="icon" 
+                              size="sm" 
+                              onClick={() => handleAction("download", lote.nome_arquivo)}
+                              disabled={downloadState.isLoading || higienizarState.isLoading || lote.higienizacao_status !== "Finalizado"}
+                              title="Download (apenas após higienização bem-sucedida)"
+                            >
+                              {downloadState.isLoading ? <Loader2 size={16} className="animate-spin" /> : <DownloadIcon size={16} />}
+                            </Button>
+                          </div>
+                          {/* Mensagens de erro de chamada de API de download ainda podem ser mostradas aqui se necessário, ou globalmente */}
+                          {downloadState.error && <p className="text-xs text-red-500 mt-1">Erro Download: {downloadState.error}</p>}
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-            </motion.div>
-          )}
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>
