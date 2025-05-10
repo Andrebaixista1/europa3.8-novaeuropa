@@ -21,7 +21,7 @@ import Button from "../components/Button";
 import LoadingSpinner from "../components/LoadingSpinner"; 
 import { useAuth } from "../context/AuthContext";
 
-const API_BASE = "http://177.153.62.236:5679/";
+const API_BASE = "https://apivieiracred.store";
 
 interface AccountLimits {
   id: number;

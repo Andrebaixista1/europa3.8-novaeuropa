@@ -24,7 +24,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export const API_BASE = import.meta.env.DEV
-  ? 'http://177.153.62.236:5679/'
+  ? 'https://apivieiracred.store'
   : ''; // em prod ficará vazio → usa path relativo e o vercel.json proxya
 
 
