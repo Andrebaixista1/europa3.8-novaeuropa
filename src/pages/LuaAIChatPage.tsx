@@ -1,15 +1,30 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import DashboardHeader from "../components/DashboardHeader"; // Ajuste o caminho se necessário
-import Button from "../components/Button"; // Ajuste o caminho se necessário
-import { useAuth } from "../context/AuthContext"; // Ajuste o caminho se necessário
-import { Send, MessageSquare } from "lucide-react";
-import LoadingSpinner from "../components/LoadingSpinner"; // Ajuste o caminho se necessário
+import DashboardHeader from "../components/DashboardHeader";
+import Button from "../components/Button";
+import { useAuth } from "../context/AuthContext";
+import { Send } from "lucide-react";
+import LoadingSpinner from "../components/LoadingSpinner";
 
-// Constante para a URL da API, similar ao IndividualQueryDashboard
+// Constante para a URL da API
 export const API_BASE = import.meta.env.DEV
-  ? "https://apivieiracred.store" // URL de desenvolvimento
-  : ""; // Em produção, usa path relativo
+  ? "https://apivieiracred.store"
+  : "";
+
+// Mensagem inicial com HTML
+const saudacaoLua = `
+  Olá! 🌙✨<br/>
+  Eu sou a <strong>Lua</strong>, a inteligência artificial da <strong>Nova Europa</strong> 🤖💙<br/>
+  Estou aqui para te ajudar com:<br/>
+  • Consultas de clientes 👥🔍
+  • Saldos e finanças 💰📊
+  • Higienizações 🧼✨
+  • Estratégias de consignado 🎯📝
+  …e muito mais! 🚀
+
+  Ainda estou em fase de desenvolvimento, mas já aprendi bastante e posso te apoiar em diversas tarefas 🌱📚<br/>
+  Que tal fazermos um teste? Me conta o que você precisa e vamos explorar juntos todas as minhas funcionalidades! 😉👍
+`;
 
 interface ChatMessage {
   id: string;
@@ -17,8 +32,6 @@ interface ChatMessage {
   sender: "user" | "ai";
   timestamp?: Date;
 }
-
-const saudacaoLua = "Olá! Sou a Lua, a inteligência artificial da Nova Europa. Estou aqui para te auxiliar com consultas de clientes, saldos, higienizações, estratégias de consignado e muito mais.\n\nAinda estou em fase de desenvolvimento, mas já aprendi bastante e posso te ajudar com diversas tarefas. Que tal começar com um teste? Me diga o que você precisa e exploraremos juntos as minhas funcionalidades!";
 
 const LuaAIChatPage: React.FC = () => {
   const { user } = useAuth();
@@ -32,74 +45,66 @@ const LuaAIChatPage: React.FC = () => {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef<null | HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  useEffect(scrollToBottom, [messages]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || !user) return;
 
     const userMessage: ChatMessage = {
       id: "user-" + Date.now(),
-      text: inputValue.trim(),
+      text: inputValue.trim(), // texto puro do usuário
       sender: "user",
       timestamp: new Date(),
     };
 
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/api/lua-ia`, {
+      const res = await fetch(`${API_BASE}/api/lua-ia`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, message: userMessage.text }),
       });
-
-      if (!response.ok) {
-        // Tenta ler uma mensagem de erro do corpo da resposta, se houver
-        let errorText = "Falha ao comunicar com a Lua AI.";
+      if (!res.ok) {
+        let err = "Falha ao comunicar com a Lua AI.";
         try {
-            const errorData = await response.json();
-            errorText = errorData.error || errorData.message || errorText;
-        } catch (e) {
-            // Mantém a mensagem de erro padrão se o corpo não for JSON ou não tiver a info
-        }
-        throw new Error(errorText);
+          const j = await res.json();
+          err = j.error || j.message || err;
+        } catch {}
+        throw new Error(err);
       }
-
-      const aiData = await response.json();
-      // Valida se a resposta da API tem o formato esperado
-      if (!aiData || typeof aiData.reply !== 'string') {
+      const aiData = await res.json();
+      if (!aiData?.reply || typeof aiData.reply !== "string") {
         throw new Error("Resposta inesperada da Lua AI.");
       }
-      const aiMessageText = aiData.reply;
 
       const aiMessage: ChatMessage = {
         id: "ai-" + Date.now(),
-        text: aiMessageText,
+        text: aiData.reply,
         sender: "ai",
         timestamp: new Date(),
       };
-      setMessages((prevMessages) => [...prevMessages, aiMessage]);
-    } catch (error: any) { // Especifica o tipo do erro para acessar error.message
-      console.error("Erro ao enviar mensagem para Lua AI:", error);
-      const errorMessage: ChatMessage = {
-        id: "ai-error-" + Date.now(),
-        text: error.message || "Desculpe, não consegui processar sua mensagem no momento. Tente novamente mais tarde.",
-        sender: "ai",
-        timestamp: new Date(),
-      };
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (error: any) {
+      console.error(error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: "ai-error-" + Date.now(),
+          text:
+            error.message ||
+            "Desculpe, não consegui processar sua mensagem no momento.",
+          sender: "ai",
+          timestamp: new Date(),
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -115,15 +120,20 @@ const LuaAIChatPage: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="bg-white border border-neutral-200 rounded-xl shadow-xl p-4 sm:p-6 w-full max-w-3xl flex flex-col h-[calc(100vh-200px)] sm:h-[calc(100vh-220px)]"
         >
-          {/* ChatWindow Area */}
+          {/* ChatWindow */}
           <div className="flex-1 overflow-y-auto mb-4 pr-2 space-y-4">
             {messages.map((msg) => (
               <motion.div
                 key={msg.id}
-                initial={{ opacity: 0, y: msg.sender === 'user' ? 10 : -10 }}
+                initial={{
+                  opacity: 0,
+                  y: msg.sender === "user" ? 10 : -10,
+                }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex ${
+                  msg.sender === "user" ? "justify-end" : "justify-start"
+                }`}
               >
                 <div
                   className={`max-w-[70%] p-3 rounded-lg shadow ${
@@ -132,39 +142,60 @@ const LuaAIChatPage: React.FC = () => {
                       : "bg-neutral-200 text-neutral-800 rounded-bl-none"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                  {msg.sender === "ai" ? (
+                    // renderiza HTML para as mensagens AI
+                    <p
+                      className="text-sm whitespace-pre-wrap"
+                      dangerouslySetInnerHTML={{ __html: msg.text }}
+                    />
+                  ) : (
+                    // usuário continua renderizando texto puro
+                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                  )}
                   {msg.timestamp && (
-                    <p className={`text-xs mt-1 ${
-                      msg.sender === 'user' ? 'text-blue-200' : 'text-neutral-500'
-                    } ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>
-                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <p
+                      className={`text-xs mt-1 ${
+                        msg.sender === "user"
+                          ? "text-blue-200 text-right"
+                          : "text-neutral-500 text-left"
+                      }`}
+                    >
+                      {msg.timestamp.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </p>
                   )}
                 </div>
               </motion.div>
             ))}
+
             {isLoading && (
-                <motion.div 
-                    initial={{ opacity: 0}}
-                    animate={{ opacity: 1}}
-                    className="flex justify-start">
-                    <div className="max-w-[70%] p-3 rounded-lg shadow bg-neutral-200 text-neutral-800 rounded-bl-none flex items-center">
-                        <LoadingSpinner size="xs" colorClass="text-neutral-600" />
-                        <span className="ml-2 text-sm">Lua está digitando...</span>
-                    </div>
-                </motion.div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex justify-start"
+              >
+                <div className="max-w-[70%] p-3 rounded-lg shadow bg-neutral-200 text-neutral-800 rounded-bl-none flex items-center">
+                  <LoadingSpinner size="xs" colorClass="text-neutral-600" />
+                  <span className="ml-2 text-sm">Lua está digitando...</span>
+                </div>
+              </motion.div>
             )}
+
             <div ref={messagesEndRef} />
           </div>
 
-          {/* ChatInput Area */}
+          {/* ChatInput */}
           <div className="mt-auto pt-4 border-t border-neutral-200">
             <div className="flex items-center space-x-2">
               <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && !isLoading && handleSendMessage()}
+                onKeyPress={(e) =>
+                  e.key === "Enter" && !isLoading && handleSendMessage()
+                }
                 placeholder="Digite sua mensagem para Lua..."
                 className="europa-input flex-1 !py-3"
                 disabled={isLoading}
@@ -175,11 +206,7 @@ const LuaAIChatPage: React.FC = () => {
                 disabled={isLoading || !inputValue.trim()}
                 className="!px-4 !py-3"
               >
-                {isLoading ? (
-                  <LoadingSpinner size="sm" />
-                ) : (
-                  <Send size={18} />
-                )}
+                {isLoading ? <LoadingSpinner size="sm" /> : <Send size={18} />}
               </Button>
             </div>
           </div>
@@ -190,4 +217,3 @@ const LuaAIChatPage: React.FC = () => {
 };
 
 export default LuaAIChatPage;
-
