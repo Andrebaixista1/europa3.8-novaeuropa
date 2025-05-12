@@ -21,7 +21,7 @@ import Button from "../components/Button";
 import LoadingSpinner from "../components/LoadingSpinner"; 
 import { useAuth } from "../context/AuthContext";
 
-const API_BASE = "http://177.153.62.236:5679/";
+const API_BASE = "https://apivieiracred.store";
 
 interface AccountLimits {
   id: number;
@@ -31,28 +31,83 @@ interface AccountLimits {
   queries_performed: number;
 }
 
-interface HigienizacaoResult {
-  Higienizados: number;
-  Erros: number;
-  Finalizados: number;
-  Status: string; // "Finalizado", "Erro", etc.
-  Message?: string; // Mensagem de erro detalhada da API
+interface LogLoteData {
+  id_log?: number; 
+  higienizados: number;
+  erros: number;
+  total: number; 
+  data_hora_registro: string; 
+  status_lote: string; 
+}
+
+interface LoteFromApiLotes {
+    nome_arquivo: string;
+    qtd_linhas: number; 
 }
 
 interface Lote {
   nome_arquivo: string;
-  qtd_linhas: number;
-  higienizacao_status?: string; // Novo campo para o status principal da higienização (ex: "Finalizado")
-  higienizacao_resultado?: HigienizacaoResult | null; // Para armazenar o objeto de resultado completo
+  qtd_linhas: number; 
+  log_data?: LogLoteData | null; 
+  isLoadingLogData?: boolean;
+  logDataError?: string | null;
 }
 
 interface ActionState {
-  [actionKey: string]: { // Chave agora é actionType-fileName
+  [actionKey: string]: { 
     isLoading: boolean;
     error: string | null;
-    // success: string | null; // Removido, o resultado da higienização será exibido em sua própria coluna
   };
 }
+
+// Colunas esperadas no CSV, conforme especificado pelo usuário em pasted_content_2.txt
+const CSV_HEADERS = [
+  "id", "numero_beneficio", "numero_documento", "nome", "estado", "pensao", 
+  "data_nascimento", "tipo_bloqueio", "data_concessao", "tipo_credito", 
+  "limite_cartao_beneficio", "saldo_cartao_beneficio", "situacao_beneficio", 
+  "data_final_beneficio", "limite_cartao_consignado", "saldo_cartao_consignado", 
+  "saldo_credito_consignado", "saldo_total_maximo", "saldo_total_utilizado", 
+  "saldo_total_disponivel", "data_consulta", "data_retorno_consulta", 
+  "hora_retorno_consulta", "nome_representante_legal", "banco_desembolso", 
+  "agencia_desembolso", "conta_desembolso", "digito_desembolso", 
+  "numero_portabilidades", "id_usuario", "data_hora_registro", 
+  "nome_arquivo", "status_api"
+];
+
+const formatDateTimeBrazilian = (dateTimeString?: string): string => {
+  if (!dateTimeString || dateTimeString.trim() === "") return "N/A";
+  try {
+    const normalizedDateTimeString = dateTimeString.replace(" ", "T");
+    const date = new Date(normalizedDateTimeString);
+    
+    if (isNaN(date.getTime())) {
+        const parts = dateTimeString.match(/(\d+)/g);
+        if (parts && parts.length >= 5) { 
+            const year = parseInt(parts[0], 10);
+            const monthIndex = parseInt(parts[1], 10) - 1; 
+            const day = parseInt(parts[2], 10);
+            const hours = parseInt(parts[3], 10);
+            const minutes = parseInt(parts[4], 10);
+            const parsedDate = new Date(year, monthIndex, day, hours, minutes);
+            if (!isNaN(parsedDate.getTime())) {
+                return parsedDate.toLocaleString("pt-BR", {
+                    day: "2-digit", month: "2-digit", year: "numeric",
+                    hour: "2-digit", minute: "2-digit",
+                });
+            }
+        }
+        console.warn("[formatDateTimeBrazilian] Data inválida recebida para formatação:", dateTimeString);
+        return "Data inválida"; 
+    }
+    return date.toLocaleString("pt-BR", {
+      day: "2-digit", month: "2-digit", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
+  } catch (e) {
+    console.error("[formatDateTimeBrazilian] Erro ao formatar data:", dateTimeString, e);
+    return dateTimeString; 
+  }
+};
 
 const BatchQueryDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -61,9 +116,9 @@ const BatchQueryDashboard: React.FC = () => {
   const [accountLimits, setAccountLimits] = useState<AccountLimits | null>(null);
   const [lotes, setLotes] = useState<Lote[]>([]);
   const [isLoadingLimits, setIsLoadingLimits] = useState(true);
-  const [isLoadingLotes, setIsLoadingLotes] = useState(true);
+  const [isLoadingLotes, setIsLoadingLotes] = useState(true); 
   const [limitError, setLimitError] = useState<string | null>(null);
-  const [lotesError, setLotesError] = useState<string | null>(null);
+  const [lotesError, setLotesError] = useState<string | null>(null); 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isAddingFile, setIsAddingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -88,25 +143,19 @@ const BatchQueryDashboard: React.FC = () => {
         throw new Error(`Erro ao buscar saldo: ${response.statusText} - ${responseText || "Sem corpo de erro"}`);
       }
       if (!responseText) {
-        console.warn("API de saldo retornou uma resposta vazia.");
         setAccountLimits(null);
       } else {
-        try {
-          const dataFromApi = JSON.parse(responseText);
-          setAccountLimits({
-            id: dataFromApi.id,
-            login: dataFromApi.login,
-            total_loaded: dataFromApi.total_carregado,
-            available_limit: dataFromApi.limite_disponivel,
-            queries_performed: dataFromApi.consultas_realizada,
-          });
-        } catch (parseError) {
-          console.error("Falha ao fazer parse do JSON da API de saldo:", parseError);
-          throw new Error(`Falha ao processar resposta do saldo: ${parseError instanceof Error ? parseError.message : "Formato inválido."}`);
-        }
+        const dataFromApi = JSON.parse(responseText);
+        setAccountLimits({
+          id: dataFromApi.id,
+          login: dataFromApi.login,
+          total_loaded: dataFromApi.total_carregado,
+          available_limit: dataFromApi.limite_disponivel,
+          queries_performed: dataFromApi.consultas_realizada,
+        });
       }
     } catch (error) {
-      console.error("Falha ao buscar limites da conta:", error);
+      console.error("[fetchAccountLimits] Falha ao buscar limites da conta:", error);
       setLimitError(`Não foi possível carregar os dados de saldo. ${error instanceof Error ? error.message : "Tente novamente mais tarde."}`);
       setAccountLimits(null);
     } finally {
@@ -114,46 +163,131 @@ const BatchQueryDashboard: React.FC = () => {
     }
   }, [userId]);
 
+  const fetchLoteLogData = useCallback(async (currentUserId: number, nomeArquivo: string): Promise<LogLoteData | null> => {
+    console.log(`[fetchLoteLogData] Iniciando busca de log para: ${nomeArquivo}, ID Usuário: ${currentUserId}`);
+    try {
+      const response = await fetch(`${API_BASE}/webhook/api/log_lotes`, {
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify({ id: currentUserId, nome_arquivo: nomeArquivo }), 
+      });
+      console.log(`[fetchLoteLogData] Resposta da API /log_lotes para ${nomeArquivo} - Status: ${response.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[fetchLoteLogData] Erro ao buscar log para ${nomeArquivo}: ${response.statusText} - ${errorText}`);
+        return null;
+      }
+      const responseData = await response.json();
+      console.log(`[fetchLoteLogData] Dados JSON recebidos para ${nomeArquivo}:`, responseData);
+      if (Array.isArray(responseData) && responseData.length > 0) {
+        const data = responseData[0];
+        return {
+          id_log: data.id,
+          higienizados: parseInt(String(data.higienizados), 10) || 0,
+          erros: parseInt(String(data.erros), 10) || 0,
+          total: parseInt(String(data.total), 10) || 0, 
+          data_hora_registro: data.data_hora_registro || "", 
+          status_lote: data.status_lote || "Indefinido", 
+        };
+      } else if (!Array.isArray(responseData) && responseData) { // Caso a API retorne um objeto direto e não um array
+        const data = responseData;
+        return {
+            id_log: data.id,
+            higienizados: parseInt(String(data.higienizados), 10) || 0,
+            erros: parseInt(String(data.erros), 10) || 0,
+            total: parseInt(String(data.total), 10) || 0,
+            data_hora_registro: data.data_hora_registro || "",
+            status_lote: data.status_lote || "Indefinido",
+        };
+      } else {
+        console.warn(`[fetchLoteLogData] Resposta inesperada ou vazia da API /log_lotes para ${nomeArquivo}:`, responseData);
+        return null;
+      }
+    } catch (error) {
+      console.error(`[fetchLoteLogData] Falha ao buscar dados de log para ${nomeArquivo}:`, error);
+      return null;
+    }
+  }, []);
+
   const fetchLotes = useCallback(async () => {
     if (!userId) {
       setIsLoadingLotes(false);
       setLotesError("ID do usuário não encontrado para buscar os lotes.");
       return;
     }
+    console.log("[fetchLotes] Iniciando busca de lotes...");
     setIsLoadingLotes(true);
     setLotesError(null);
     try {
-      const response = await fetch(`${API_BASE}/webhook/api/lotes`, {
+      const responseLotes = await fetch(`${API_BASE}/webhook/api/lotes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: userId }),
       });
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Erro ao buscar lotes: ${response.statusText} - ${errorData}`);
+      console.log(`[fetchLotes] Resposta da API /lotes - Status: ${responseLotes.status}`);
+      if (!responseLotes.ok) {
+        const errorData = await responseLotes.text();
+        throw new Error(`Erro ao buscar lotes: ${responseLotes.statusText} - ${errorData}`);
       }
-      const data = await response.json();
-      // Inicializa lotes com campos de higienização vazios
-      const initialLotes = data.map((lote: Omit<Lote, 'higienizacao_status' | 'higienizacao_resultado'>) => ({
-        ...lote,
-        higienizacao_status: undefined,
-        higienizacao_resultado: null,
-      }));
-      setLotes(initialLotes);
+      const lotesBaseFromApi: LoteFromApiLotes[] = await responseLotes.json();
+      console.log("[fetchLotes] Lotes base recebidos da API /api/lotes:", lotesBaseFromApi);
+
+      if (!Array.isArray(lotesBaseFromApi)) {
+          console.error("[fetchLotes] Resposta de /api/lotes não é um array:", lotesBaseFromApi);
+          setLotes([]);
+          setIsLoadingLotes(false);
+          setLotesError("Formato inesperado da resposta da API de lotes.");
+          return;
+      }
+
+      if (lotesBaseFromApi.length === 0) {
+        console.log("[fetchLotes] Nenhum lote base encontrado.");
+        setLotes([]);
+        setIsLoadingLotes(false);
+        return;
+      }
+
+      console.log(`[fetchLotes] Mapeando ${lotesBaseFromApi.length} lotes base para buscar logs...`);
+      const lotesCompletosPromises = lotesBaseFromApi.map(async (loteBase, index) => {
+        console.log(`[fetchLotes] Iteração ${index + 1}: Preparando para buscar log do lote: ${loteBase.nome_arquivo}`);
+        const logData = await fetchLoteLogData(userId, loteBase.nome_arquivo);
+        console.log(`[fetchLotes] Iteração ${index + 1}: Log recebido para ${loteBase.nome_arquivo}:`, logData);
+        return {
+          nome_arquivo: loteBase.nome_arquivo,
+          qtd_linhas: loteBase.qtd_linhas || 0, 
+          log_data: logData,
+          isLoadingLogData: false,
+          logDataError: logData ? null : `Falha ao carregar log para ${loteBase.nome_arquivo}`,
+        };
+      });
+
+      const lotesCompletos = await Promise.all(lotesCompletosPromises);
+      console.log("[fetchLotes] Todos os logs buscados. Lotes completos:", lotesCompletos);
+      setLotes(lotesCompletos);
+
     } catch (error) {
-      console.error("Falha ao buscar lotes:", error);
+      console.error("[fetchLotes] Falha ao buscar lotes:", error);
       setLotesError(`Não foi possível carregar os dados dos lotes. ${error instanceof Error ? error.message : "Tente novamente mais tarde."}`);
+      setLotes([]);
     } finally {
-      setIsLoadingLotes(false);
+      setIsLoadingLotes(false); 
+      console.log("[fetchLotes] Busca de lotes finalizada.");
     }
-  }, [userId]);
+  }, [userId, fetchLoteLogData]);
+
+  const refreshAllData = useCallback(async () => {
+    console.log("[refreshAllData] Iniciando atualização de todos os dados...");
+    await fetchAccountLimits();
+    await fetchLotes();
+    console.log("[refreshAllData] Atualização de todos os dados finalizada.");
+  }, [fetchAccountLimits, fetchLotes]);
 
   useEffect(() => {
     if (userId) {
-      fetchAccountLimits();
-      fetchLotes();
+      console.log("[useEffect] ID do usuário detectado, iniciando refreshAllData.");
+      refreshAllData();
     }
-  }, [userId, fetchAccountLimits, fetchLotes]);
+  }, [userId, refreshAllData]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -179,9 +313,10 @@ const BatchQueryDashboard: React.FC = () => {
         const errorData = await responseCriaLote.text();
         throw new Error(`Erro ao criar lote: ${responseCriaLote.statusText} - ${errorData}`);
       }
-      await fetchLotes();
+      console.log("[handleAddFileAndProcess] Lote criado com sucesso, atualizando todos os dados...");
+      await refreshAllData();
     } catch (error) {
-      console.error("Erro ao adicionar arquivo e processar:", error);
+      console.error("[handleAddFileAndProcess] Erro ao adicionar arquivo e processar:", error);
       alert(`Falha ao adicionar arquivo: ${error instanceof Error ? error.message : "Tente novamente."}`);
     } finally {
       setSelectedFile(null);
@@ -199,13 +334,31 @@ const BatchQueryDashboard: React.FC = () => {
     }
   };
 
+  const convertJsonToCsv = (jsonData: any[]): string => {
+    if (!jsonData || jsonData.length === 0) {
+      return "";
+    }
+    const headers = CSV_HEADERS;
+    const csvRows = [];
+    // Adiciona o cabeçalho CSV, garantindo que os nomes dos cabeçalhos também sejam escapados e entre aspas
+    csvRows.push(headers.map(header => `"${String(header).replace(/"/g, '""')}"`).join(";"));
+
+    for (const row of jsonData) {
+      const values = headers.map(header => {
+        // Garante que o valor seja uma string antes de tentar usar .replace
+        const val = row[header] === null || row[header] === undefined ? "" : String(row[header]);
+        const escaped = val.replace(/"/g, '""'); // Trata aspas duplas dentro do valor
+        return `"${escaped}"`; // Coloca todos os valores entre aspas duplas
+      });
+      csvRows.push(values.join(";"));
+    }
+    return csvRows.join("\n");
+  };
+
+
   const handleAction = async (actionType: "higienizar" | "download", nomeArquivo: string) => {
     if (!userId) {
       alert("ID do usuário não encontrado.");
-      return;
-    }
-    if (!accountLimits && actionType === "higienizar") { // Checagem de accountLimits relevante para higienizar
-      alert("Limites da conta não carregados. Tente novamente mais tarde.");
       return;
     }
 
@@ -217,11 +370,30 @@ const BatchQueryDashboard: React.FC = () => {
 
     try {
       const endpoint = actionType === "higienizar" ? `${API_BASE}/webhook/api/higienizar` : `${API_BASE}/webhook/api/download`;
-      const bodyPayload = {
-        id_usuario: userId,
-        nome_arquivo: nomeArquivo,
-        limite_disponivel: accountLimits?.available_limit, 
-      };
+      const loteAtual = lotes.find(l => l.nome_arquivo === nomeArquivo);
+      
+      let bodyPayload: any;
+
+      if (actionType === "higienizar") {
+        if (!accountLimits || !loteAtual?.log_data || (loteAtual.log_data.total > accountLimits.available_limit)) {
+            const errorMessage = !accountLimits ? "Limites da conta não carregados." 
+                               : !loteAtual?.log_data ? "Dados do lote (log) incompletos para verificar limite."
+                               : "Não é possível higienizar: Quantidade de linhas do lote (log) excede o limite disponível.";
+            alert(errorMessage);
+            setActionStates(prev => ({ ...prev, [actionKey]: { isLoading: false, error: errorMessage } }));
+            return;
+        }
+        bodyPayload = {
+          id_usuario: userId, 
+          nome_arquivo: nomeArquivo,
+          limite_disponivel: accountLimits?.available_limit, 
+        };
+      } else { // download
+        bodyPayload = {
+          id: userId, // API /api/download espera 'id' e não 'id_usuario'
+          nome_arquivo: nomeArquivo,
+        };
+      }
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -229,57 +401,44 @@ const BatchQueryDashboard: React.FC = () => {
         body: JSON.stringify(bodyPayload),
       });
 
-      const responseText = await response.text();
-
       if (!response.ok) {
+        const responseText = await response.text(); 
         throw new Error(responseText || `Erro ao ${actionType} o arquivo ${nomeArquivo}`);
       }
 
       if (actionType === "download") {
-        const blob = await response.blob(); // Assumindo que a API de download retorna o blob diretamente
+        const jsonData = await response.json(); // Espera-se que a API retorne um JSON array
+        const csvData = convertJsonToCsv(jsonData);
+        const blob = new Blob(["\uFEFF" + csvData], { type: 'text/csv;charset=utf-8;' }); // Adiciona BOM para UTF-8 e define o charset
+        
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        const originalExtension = nomeArquivo.split(".").pop() || "csv";
-        const downloadFileName = `${nomeArquivo.substring(0, nomeArquivo.lastIndexOf(".") || nomeArquivo.length)}.${originalExtension}`;
+        // Remove a extensão original e adiciona .csv
+        const downloadFileName = `${nomeArquivo.substring(0, nomeArquivo.lastIndexOf(".") || nomeArquivo.length)}.csv`;
         a.download = downloadFileName; 
         document.body.appendChild(a);
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
-        setActionStates(prev => ({ 
-          ...prev, 
-          [actionKey]: { isLoading: false, error: null } 
-        }));
+        setActionStates(prev => ({ ...prev, [actionKey]: { isLoading: false, error: null } }));
       } else { // Higienizar
-        const resultadoHigienizacao: HigienizacaoResult = JSON.parse(responseText);
-        setLotes(prevLotes => 
-          prevLotes.map(lote => 
-            lote.nome_arquivo === nomeArquivo 
-              ? { ...lote, higienizacao_status: resultadoHigienizacao.Status, higienizacao_resultado: resultadoHigienizacao } 
-              : lote
-          )
-        );
-        setActionStates(prev => ({ 
-          ...prev, 
-          [actionKey]: { isLoading: false, error: null } 
-        }));
+        console.log(`[handleAction] Ação ${actionType} para ${nomeArquivo} bem-sucedida, atualizando todos os dados...`);
+        await refreshAllData();
+        setActionStates(prev => ({ ...prev, [actionKey]: { isLoading: false, error: null } }));
       }
 
     } catch (error) {
-      console.error(`Falha ao ${actionType} arquivo:`, error);
+      console.error(`[handleAction] Falha ao ${actionType} arquivo:`, error);
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
       setActionStates(prev => ({ 
         ...prev, 
-        [actionKey]: { isLoading: false, error: error instanceof Error ? error.message : "Erro desconhecido" }
+        [actionKey]: { isLoading: false, error: errorMessage }
       }));
-       if (actionType === "higienizar") {
-        setLotes(prevLotes => 
-          prevLotes.map(lote => 
-            lote.nome_arquivo === nomeArquivo 
-              ? { ...lote, higienizacao_status: "Erro", higienizacao_resultado: { Status: "Erro", Message: error instanceof Error ? error.message : "Erro desconhecido", Higienizados: 0, Erros: lote.qtd_linhas, Finalizados: 0 } } 
-              : lote
-          )
-        );
+      // Mesmo em caso de erro na higienização, atualiza os dados para refletir qualquer mudança parcial ou estado de erro.
+      if (actionType === "higienizar") {
+        console.log(`[handleAction] Erro na ação ${actionType} para ${nomeArquivo}, atualizando todos os dados...`);
+        await refreshAllData();
       }
     }
   };
@@ -300,35 +459,48 @@ const BatchQueryDashboard: React.FC = () => {
     {
       icon: <Activity size={20} className="text-primary-600" />,
       title: "Consultas",
-      valueKey: "queries_performed",
+      valueKey: "queries_performed", // Corrigido para corresponder à interface AccountLimits
       subtitle: "Total consultas",
     },
     {
       icon: <UserIcon size={20} className="text-primary-600" />,
       title: "Login",
-      value: user?.username ?? "N/A",
+      value: user?.username ?? "N/A", // Usar user.username se disponível
       subtitle: "Usuário logado",
     },
   ];
 
   const getStatusLoteDisplay = (lote: Lote) => {
-    if (lote.higienizacao_status === "Finalizado") {
-      return { text: "Finalizado", color: "text-green-600 bg-green-100" };
+    if (lote.isLoadingLogData) {
+      return { text: "Carregando...", color: "text-neutral-500 bg-neutral-100" };
     }
-    if (lote.higienizacao_status === "Erro") {
-        return { text: "Erro na Higienização", color: "text-red-600 bg-red-100" };
+    if (lote.logDataError && !lote.log_data) { 
+      return { text: "Erro Log", color: "text-red-600 bg-red-100" };
     }
-    if (accountLimits && lote.qtd_linhas > accountLimits.available_limit) {
-      return { text: "Acima do limite", color: "text-red-600 bg-red-100" };
+    if (lote.log_data && lote.log_data.status_lote) {
+      const statusLog = lote.log_data.status_lote.toLowerCase();
+      if (statusLog === "finalizado") {
+        return { text: "Finalizado", color: "text-green-600 bg-green-100" };
+      }
+      if (statusLog === "pendente") {
+        return { text: "Pendente", color: "text-yellow-600 bg-yellow-100" };
+      }
+      if (statusLog === "processando") {
+        return { text: "Processando...", color: "text-blue-600 bg-blue-100" };
+      }
+      if (statusLog.includes("erro")) {
+        return { text: "Erro", color: "text-red-600 bg-red-100" };
+      }
+      return { text: lote.log_data.status_lote || "Indefinido", color: "text-neutral-500 bg-neutral-100" };
     }
-    return { text: "Pendente", color: "text-yellow-600 bg-yellow-100" };
+    return { text: "Indisponível", color: "text-neutral-500 bg-neutral-100" };
   };
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
       <DashboardHeader title="Consulta em Lote" />
       <div className="container mx-auto px-4 py-8 flex-1">
-        <div className="max-w-5xl mx-auto grid gap-6"> {/* Aumentado max-w para acomodar nova coluna */}
+        <div className="max-w-7xl mx-auto grid gap-6">
           {limitError && (
             <motion.div
               className="bg-error-100 border border-error-400 text-error-700 px-4 py-3 rounded relative mb-4"
@@ -373,6 +545,7 @@ const BatchQueryDashboard: React.FC = () => {
             ))}
           </motion.div>
 
+          {/* Seção de Upload de Arquivos */}
           <motion.div
             className="bg-white border border-neutral-200 rounded-xl shadow p-8 mt-6"
             initial={{ opacity: 0, y: 20 }}
@@ -407,7 +580,7 @@ const BatchQueryDashboard: React.FC = () => {
                 />
                 <label htmlFor="fileUpload" className="w-full sm:w-auto">
                   <Button
-                    variant="secondary"
+                    variant="secondary" 
                     className="cursor-pointer w-full"
                     icon={<FileText size={18} />}
                     disabled={isAddingFile}
@@ -418,123 +591,110 @@ const BatchQueryDashboard: React.FC = () => {
                 </label>
                 {selectedFile && (
                   <Button
-                    variant="danger_outline"
+                    variant="danger_outline" 
                     onClick={handleRemoveSelectedFile}
                     disabled={isAddingFile}
                     icon={<Trash2 size={18} />}
                     className="w-full sm:w-auto"
                   >
-                    Remover Seleção
+                    Remover
                   </Button>
                 )}
               </div>
             </div>
             {selectedFile && (
-              <div className="flex justify-center mt-6">
+              <div className="text-center">
                 <Button
-                  variant="primary"
                   onClick={handleAddFileAndProcess}
                   disabled={isAddingFile || !selectedFile}
-                  icon={isAddingFile ? <LoadingSpinner size="sm" /> : <PlusCircle size={18} />}
+                  isLoading={isAddingFile}
+                  icon={isAddingFile ? undefined : <PlusCircle size={18} />} 
                   className="w-full sm:w-auto"
                 >
-                  {isAddingFile ? "Adicionando..." : "Adicionar Arquivo"}
+                  {isAddingFile ? "Adicionando..." : "Adicionar Arquivo e Processar"}
                 </Button>
               </div>
             )}
           </motion.div>
 
-          <motion.div
-            className="bg-white border border-neutral-200 rounded-xl shadow p-8 mt-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+          <motion.div 
+            className="mt-8"
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
             transition={{ delay: 0.5 }}
           >
-            <h3 className="text-xl font-semibold mb-4 text-neutral-700">Histórico de Lotes</h3>
-            {lotesError && (
-                <div className="bg-error-100 border border-error-400 text-error-700 px-4 py-3 rounded relative mb-2">
-                    <AlertTriangle size={18} className="inline mr-1" /> {lotesError}
-                </div>
+            <h2 className="text-xl font-semibold text-neutral-800 mb-4">Meus Lotes</h2>
+            {isLoadingLotes && <div className="text-center p-4"><LoadingSpinner /> Carregando lista de lotes...</div>}
+            {lotesError && <div className="text-center p-4 text-red-500 bg-red-50 rounded-md">{lotesError}</div>}
+            {!isLoadingLotes && !lotesError && lotes.length === 0 && (
+              <div className="text-center p-8 border-2 border-dashed border-neutral-300 rounded-lg bg-neutral-100 mt-4">
+                <FileText size={48} className="mx-auto text-neutral-400 mb-4" />
+                <h3 className="text-xl font-semibold text-neutral-700 mb-2">Sem Lotes Higienizados</h3>
+                <p className="text-neutral-500">Nenhum lote foi enviado para higienização ainda. Utilize a seção de upload acima para adicionar arquivos.</p>
+              </div>
             )}
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-neutral-200">
-                <thead className="bg-neutral-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Nome do Arquivo</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Qtd. Linhas</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Status</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Higienizado / Erro</th> {/* Nova Coluna */}
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-neutral-200">
-                  {isLoadingLotes && (
-                    <tr><td colSpan={5} className="text-center py-4"><LoadingSpinner /> Carregando lotes...</td></tr>
-                  )}
-                  {!isLoadingLotes && !lotesError && lotes.length === 0 && (
-                    <tr><td colSpan={5} className="text-center py-4">Nenhum lote encontrado.</td></tr>
-                  )}
-                  {!isLoadingLotes && !lotesError && lotes.map((lote, index) => {
-                    const statusInfo = getStatusLoteDisplay(lote);
-                    const higienizarActionKey = `higienizar-${lote.nome_arquivo}`;
-                    const downloadActionKey = `download-${lote.nome_arquivo}`;
-                    const higienizarState = actionStates[higienizarActionKey] || { isLoading: false, error: null };
-                    const downloadState = actionStates[downloadActionKey] || { isLoading: false, error: null };
+            {!isLoadingLotes && !lotesError && lotes.length > 0 && (
+              <div className="overflow-x-auto bg-white border border-neutral-200 rounded-xl shadow">
+                <table className="min-w-full divide-y divide-neutral-200">
+                  <thead className="bg-neutral-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">Nome do Arquivo</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">Qtd. Linhas</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">Higienizado / Erro</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">Data Criação</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-neutral-200">
+                    {lotes.map((lote) => {
+                      const statusDisplay = getStatusLoteDisplay(lote);
+                      const isLoadingHigienizar = actionStates[`higienizar-${lote.nome_arquivo}`]?.isLoading;
+                      const isLoadingDownload = actionStates[`download-${lote.nome_arquivo}`]?.isLoading;
+                      const isFinalizado = lote.log_data?.status_lote?.toLowerCase() === "finalizado";
+                      const higienizarError = actionStates[`higienizar-${lote.nome_arquivo}`]?.error;
+                      const downloadError = actionStates[`download-${lote.nome_arquivo}`]?.error;
 
-                    return (
-                      <tr key={`${lote.nome_arquivo}-${index}`}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{lote.nome_arquivo}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">{lote.qtd_linhas}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusInfo.color}`}>
-                            {statusInfo.text}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
-                          {lote.higienizacao_resultado ? (
-                            <div className="text-xs">
-                              <p>Status: {lote.higienizacao_resultado.Status}</p>
-                              <p>Higienizados: {lote.higienizacao_resultado.Higienizados}</p>
-                              <p>Erros: {lote.higienizacao_resultado.Erros}</p>
-                              <p>Finalizados: {lote.higienizacao_resultado.Finalizados}</p>
-                              {lote.higienizacao_resultado.Message && <p className="text-red-500">Msg: {lote.higienizacao_resultado.Message}</p>}
-                            </div>
-                          ) : higienizarState.error ? (
-                            <p className="text-xs text-red-500">Falha: {higienizarState.error}</p>
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
-                          <div className="flex items-center space-x-2">
-                            <Button 
-                              variant="icon" 
-                              size="sm" 
+                      return (
+                        <tr key={lote.nome_arquivo} className="hover:bg-neutral-100 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-800">{lote.nome_arquivo}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusDisplay.color}`}>
+                              {statusDisplay.text}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 text-center">{lote.qtd_linhas ?? "N/A"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 text-center">
+                            {lote.log_data ? `${lote.log_data.higienizados} / ${lote.log_data.erros}` : "N/A"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                            {formatDateTimeBrazilian(lote.log_data?.data_hora_registro)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-1 flex items-center">
+                            <button
                               onClick={() => handleAction("higienizar", lote.nome_arquivo)}
-                              disabled={higienizarState.isLoading || downloadState.isLoading || lote.higienizacao_status === "Finalizado"}
-                              title="Higienizar"
+                              disabled={isLoadingHigienizar || isFinalizado || !!higienizarError}
+                              className="p-1.5 rounded text-neutral-500 hover:bg-neutral-200 hover:text-primary-600 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-primary-500 transition-colors"
+                              title={isFinalizado ? "Lote já finalizado" : (higienizarError || "Higienizar Lote")}
                             >
-                              {higienizarState.isLoading ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
-                            </Button>
-                            <Button 
-                              variant="icon" 
-                              size="sm" 
+                              {isLoadingHigienizar ? <Loader2 className="animate-spin h-5 w-5 text-primary-600" /> : <Zap size={18} />}
+                            </button>
+                            <button
                               onClick={() => handleAction("download", lote.nome_arquivo)}
-                              disabled={downloadState.isLoading || higienizarState.isLoading || lote.higienizacao_status !== "Finalizado"}
-                              title="Download (apenas após higienização bem-sucedida)"
+                              disabled={isLoadingDownload || !isFinalizado || !!downloadError}
+                              className="p-1.5 rounded text-neutral-500 hover:bg-neutral-200 hover:text-success-600 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-success-500 transition-colors"
+                              title={!isFinalizado ? "Download disponível após finalização" : (downloadError || "Download do Lote CSV")}
                             >
-                              {downloadState.isLoading ? <Loader2 size={16} className="animate-spin" /> : <DownloadIcon size={16} />}
-                            </Button>
-                          </div>
-                          {/* Mensagens de erro de chamada de API de download ainda podem ser mostradas aqui se necessário, ou globalmente */}
-                          {downloadState.error && <p className="text-xs text-red-500 mt-1">Erro Download: {downloadState.error}</p>}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                              {isLoadingDownload ? <Loader2 className="animate-spin h-5 w-5 text-success-600" /> : <DownloadIcon size={18} />}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </motion.div>
         </div>
       </div>

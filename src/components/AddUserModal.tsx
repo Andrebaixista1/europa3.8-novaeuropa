@@ -6,7 +6,7 @@ import Button from "./Button";
 import LoadingSpinner from "./LoadingSpinner";
 
 const API_BASE = import.meta.env.DEV
-  ? "http://177.153.62.236:5679/"
+  ? "https://apivieiracred.store"
   : "";
 
 interface Props {
