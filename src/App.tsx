@@ -14,7 +14,8 @@ import Landing from "./pages/Landing";
 import BatchQueryDashboard from "./pages/BatchQueryDashboard";
 import IndividualQueryDashboard from "./pages/IndividualQueryDashboard";
 import CreateLogins from "./pages/CreateLogins";
-import UserRecharge from "./pages/UserRecharge"; // <<< ADICIONADO IMPORT PARA NOVA PÁGINA
+import UserRecharge from "./pages/UserRecharge"; 
+import LuaAIChatPage from "./pages/LuaAIChatPage"
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -55,6 +56,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <UserRecharge /> {/* <<< ALTERADO PARA RENDERIZAR UserRecharge */}
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="dashboard/lua-ai" // Rota existente que será usada para UserRecharge
+            element={
+              <ProtectedRoute>
+                <LuaAIChatPage /> {/* <<< ALTERADO PARA RENDERIZAR UserRecharge */}
               </ProtectedRoute>
             }
           />

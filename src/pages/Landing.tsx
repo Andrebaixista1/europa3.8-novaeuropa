@@ -151,8 +151,9 @@ const Landing: React.FC = () => {
               title={
                 <>
                   Lua AI (Inteligência Artificial){" "}
+                  <br></br>
                   <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
-                    Beta
+                    Em Breve
                   </span>
                 </>
               }
