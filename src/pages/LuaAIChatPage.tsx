@@ -16,11 +16,11 @@ const saudacaoLua = `
   Olá! 🌙✨<br/>
   Eu sou a <strong>Lua</strong>, a inteligência artificial da <strong>Nova Europa</strong> 🤖💙<br/>
   Estou aqui para te ajudar com:<br/>
-  • Consultas de clientes 👥🔍
-  • Saldos e finanças 💰📊
-  • Higienizações 🧼✨
-  • Estratégias de consignado 🎯📝
-  …e muito mais! 🚀
+  • Consultas de clientes 👥🔍<br/>
+  • Saldos 💰📊<br/>
+  • Higienizações 🧼✨<br/>
+  • Estratégias de consignado 🎯📝<br/>
+  …e muito mais! 🚀<br/><br/>
 
   Ainda estou em fase de desenvolvimento, mas já aprendi bastante e posso te apoiar em diversas tarefas 🌱📚<br/>
   Que tal fazermos um teste? Me conta o que você precisa e vamos explorar juntos todas as minhas funcionalidades! 😉👍
@@ -47,6 +47,7 @@ const LuaAIChatPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  // Mantém a rolagem sempre lá embaixo
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -55,23 +56,30 @@ const LuaAIChatPage: React.FC = () => {
   const handleSendMessage = async () => {
     if (!inputValue.trim() || !user) return;
 
+    // 1) adiciona mensagem do usuário na UI
     const userMessage: ChatMessage = {
       id: "user-" + Date.now(),
-      text: inputValue.trim(), // texto puro do usuário
+      text: inputValue.trim(),
       sender: "user",
       timestamp: new Date(),
     };
-
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsLoading(true);
 
     try {
+      // 2) chama o endpoint correto
       const res = await fetch(`${API_BASE}/webhook/api/lua-ia`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, message: userMessage.text }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          message: userMessage.text,
+        }),
       });
+
       if (!res.ok) {
         let err = "Falha ao comunicar com a Lua AI.";
         try {
@@ -80,18 +88,24 @@ const LuaAIChatPage: React.FC = () => {
         } catch {}
         throw new Error(err);
       }
-      const aiData = await res.json();
-      if (!aiData?.reply || typeof aiData.reply !== "string") {
+
+      // 3) parse do array que chega: [{ id, message }]
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) {
         throw new Error("Resposta inesperada da Lua AI.");
       }
+      const { id: conversationId, message: aiReply } = data[0];
 
+      // 4) adiciona resposta da IA na UI
       const aiMessage: ChatMessage = {
-        id: "ai-" + Date.now(),
-        text: aiData.reply,
+        id: `ai-${conversationId}-${Date.now()}`,
+        text: aiReply,
         sender: "ai",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMessage]);
+
+      console.log("ID de conversa:", conversationId);
     } catch (error: any) {
       console.error(error);
       setMessages((prev) => [
@@ -143,7 +157,7 @@ const LuaAIChatPage: React.FC = () => {
                   }`}
                 >
                   {msg.sender === "ai" ? (
-                    // renderiza HTML para as mensagens AI
+                    // renderiza HTML para as mensagens da IA
                     <p
                       className="text-sm whitespace-pre-wrap"
                       dangerouslySetInnerHTML={{ __html: msg.text }}
