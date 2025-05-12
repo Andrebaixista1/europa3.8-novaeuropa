@@ -1,13 +1,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Database, Search, LogIn, UserPlus, UserReload } from "lucide-react";
+import { Database, Search, LogIn, UserPlus, Wallet, Brain } from "lucide-react";
 import EuropaLogo from "../components/EuropaLogo";
 import Button from "../components/Button";
 import { useAuth } from "../context/AuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
 
 interface QueryOptionProps {
   icon: React.ReactNode;
@@ -35,6 +34,10 @@ const Landing: React.FC = () => {
     } else {
       navigate("/login", { state: { from: "/dashboard/individual" } });
     }
+  };
+
+  const handleLuaAiQuery = () => {
+    navigate("/dashboard/lua-ai");
   };
 
   const handleLoginClick = () => {
@@ -84,7 +87,7 @@ const Landing: React.FC = () => {
           initial="hidden"
           animate="visible"
           variants={containerVariants}
-          className="max-w-4xl mx-auto text-center"
+          className="max-w-6xl mx-auto text-center" // Increased max-width for 3 columns
         >
           <motion.h1
             variants={itemVariants}
@@ -103,7 +106,9 @@ const Landing: React.FC = () => {
 
           <motion.div
             variants={itemVariants}
-            className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto"
+            // Changed to grid-cols-1 on small screens, md:grid-cols-3 for medium and up.
+            // Adjusted max-w on parent for better spacing with 3 columns.
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mx-auto"
           >
             <QueryOption
               icon={<Database size={32} className="text-white" />}
@@ -128,19 +133,39 @@ const Landing: React.FC = () => {
             />
 
             <QueryOption
-              icon={<UserPlus size={32} className="text-white" />}
-              title="Gestão de Usuarios"
-              description="Gerencie e crie novos logins de acesso."
-              onClick={() => navigate("/dashboard/create-logins")}
-              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))}
+              icon={<Brain size={32} className="text-white" />}
+              title={
+                <>
+                  Lua AI (inteligência artificial){" "}
+                  <br></br><span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
+                    Em Breve
+                  </span>
+                </>
+              }
+              description="Desvende insights e automatize tarefas com o poder da nossa Inteligência Artificial."
+              onClick={handleLuaAiQuery}
+              disabled={
+                !(isAuthenticated && (user?.id === 1 || user?.id === 53))
+              }
             />
 
             <QueryOption
               icon={<UserPlus size={32} className="text-white" />}
+              title="Gestão de Usuarios"
+              description="Gerencie e crie novos logins de acesso."
+              onClick={() => navigate("/dashboard/create-logins")}
+              disabled={
+                !(isAuthenticated && (user?.id === 1 || user?.id === 53))
+              }
+            />
+
+            <QueryOption
+              icon={<Wallet size={32} className="text-white" />}
               title="Gestão de Recargas"
               description="Administração eficiente de recargas de saldo."
               onClick={() => navigate("/dashboard/recharge-user")}
-              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))
+              disabled={
+                !(isAuthenticated && (user?.id === 1 || user?.id === 53))
               }
             />
           </motion.div>
