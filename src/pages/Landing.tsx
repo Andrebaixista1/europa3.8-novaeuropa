@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react"; // Added useEffect
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Database, Search, LogIn, UserPlus, Wallet, Brain } from "lucide-react";
@@ -7,7 +7,6 @@ import Button from "../components/Button";
 import { useAuth } from "../context/AuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
 
 interface QueryOptionProps {
   icon: React.ReactNode;
@@ -20,6 +19,22 @@ interface QueryOptionProps {
 const Landing: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'F5' || event.keyCode === 116) {
+        event.preventDefault(); // Previne o comportamento padrão de atualização do F5
+        window.location.href = 'https://consulta-in100.vercel.app/'; // Redireciona para a URL especificada
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Cleanup: remover o event listener quando o componente for desmontado
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []); // Array de dependências vazio para rodar o efeito apenas uma vez (montagem/desmontagem)
 
   const handleBatchQuery = () => {
     if (isAuthenticated) {
@@ -88,7 +103,7 @@ const Landing: React.FC = () => {
           initial="hidden"
           animate="visible"
           variants={containerVariants}
-          className="max-w-6xl mx-auto text-center" // Increased max-width for 3 columns
+          className="max-w-6xl mx-auto text-center"
         >
           <motion.h1
             variants={itemVariants}
@@ -107,8 +122,6 @@ const Landing: React.FC = () => {
 
           <motion.div
             variants={itemVariants}
-            // Changed to grid-cols-1 on small screens, md:grid-cols-3 for medium and up.
-            // Adjusted max-w on parent for better spacing with 3 columns.
             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mx-auto"
           >
             <QueryOption
@@ -134,30 +147,11 @@ const Landing: React.FC = () => {
             />
 
             <QueryOption
-              icon={<Brain size={32} className="text-white" />}
-              title={
-                <>
-                  Lua AI (inteligência artificial){" "}
-                  <br></br><span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
-                    Em Breve
-                  </span>
-                </>
-              }
-              description="Desvende insights e automatize tarefas com o poder da nossa Inteligência Artificial."
-              onClick={handleLuaAiQuery}
-              disabled={
-                !(isAuthenticated && (user?.id === 1 || user?.id === 53))
-              }
-            />
-
-            <QueryOption
               icon={<UserPlus size={32} className="text-white" />}
               title="Gestão de Usuarios"
               description="Gerencie e crie novos logins de acesso."
               onClick={() => navigate("/dashboard/create-logins")}
-              disabled={
-                !(isAuthenticated && (user?.id === 1 || user?.id === 53))
-              }
+              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))}
             />
 
             <QueryOption
@@ -165,9 +159,15 @@ const Landing: React.FC = () => {
               title="Gestão de Recargas"
               description="Administração eficiente de recargas de saldo."
               onClick={() => navigate("/dashboard/recharge-user")}
-              disabled={
-                !(isAuthenticated && (user?.id === 1 || user?.id === 53))
-              }
+              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))}
+            />
+            
+            <QueryOption
+              icon={<Brain size={32} className="text-white" />}
+              title="Lua AI (inteligência artificial)"
+              description="Desvende insights e automatize tarefas com o poder da nossa Inteligência Artificial."
+              onClick={handleLuaAiQuery}
+              disabled={false}
             />
           </motion.div>
         </motion.div>
@@ -224,3 +224,4 @@ const QueryOption: React.FC<QueryOptionProps> = ({
 );
 
 export default Landing;
+
