@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+
 interface QueryOptionProps {
   icon: React.ReactNode;
   title: React.ReactNode;
