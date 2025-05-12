@@ -67,7 +67,7 @@ const LuaAIChatPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/api/lua-ia`, {
+      const res = await fetch(`${API_BASE}/webhook/api/lua-ia`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, message: userMessage.text }),
