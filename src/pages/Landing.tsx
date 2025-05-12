@@ -150,7 +150,7 @@ const Landing: React.FC = () => {
               icon={<Brain size={32} className="text-white" />}
               title={
                 <>
-                  Consulta em Lote{" "}
+                  Lua AI (Inteligência Artificial){" "}
                   <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
                     Beta
                   </span>
