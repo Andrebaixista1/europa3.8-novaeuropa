@@ -62,7 +62,7 @@ interface ActionState {
 
 // Colunas esperadas no CSV, conforme especificado pelo usuário em pasted_content_2.txt
 const CSV_HEADERS = [
-  "id", "numero_beneficio", "numero_documento", "nome", "estado", "pensao", 
+  "numero_beneficio", "numero_documento", "nome", "estado", "pensao", 
   "data_nascimento", "tipo_bloqueio", "data_concessao", "tipo_credito", 
   "limite_cartao_beneficio", "saldo_cartao_beneficio", "situacao_beneficio", 
   "data_final_beneficio", "limite_cartao_consignado", "saldo_cartao_consignado", 
@@ -70,8 +70,8 @@ const CSV_HEADERS = [
   "saldo_total_disponivel", "data_consulta", "data_retorno_consulta", 
   "hora_retorno_consulta", "nome_representante_legal", "banco_desembolso", 
   "agencia_desembolso", "conta_desembolso", "digito_desembolso", 
-  "numero_portabilidades", "id_usuario", "data_hora_registro", 
-  "nome_arquivo", "status_api"
+  "numero_portabilidades","data_hora_registro", 
+  "nome_arquivo"
 ];
 
 const formatDateTimeBrazilian = (dateTimeString?: string): string => {
@@ -338,17 +338,69 @@ const BatchQueryDashboard: React.FC = () => {
     if (!jsonData || jsonData.length === 0) {
       return "";
     }
-    const headers = CSV_HEADERS;
+    const headers = CSV_HEADERS; // CSV_HEADERS deve estar definido no escopo superior
     const csvRows = [];
-    // Adiciona o cabeçalho CSV, garantindo que os nomes dos cabeçalhos também sejam escapados e entre aspas
     csvRows.push(headers.map(header => `"${String(header).replace(/"/g, '""')}"`).join(";"));
+
+    const monetaryColumns = [
+      "limite_cartao_beneficio", "saldo_cartao_beneficio", 
+      "limite_cartao_consignado", "saldo_cartao_consignado", "saldo_credito_consignado", 
+      "saldo_total_maximo", "saldo_total_utilizado", "saldo_total_disponivel"
+    ];
+
+    const translations: { [key: string]: { [key: string]: string } } = {
+      pensao: {
+        "not_payer": "Não Pagador",
+        "payer": "Pagador",
+        "benefit": "Benefício",
+        "null": "Não Informado"
+      },
+      tipo_bloqueio: {
+        "blocked_by_benefitiary": "Bloqueado pelo Beneficiário",
+        "not_blocked": "Não Bloqueado",
+        "blocked_in_concession": "Bloqueado em Concessão",
+        "blocked_by_tbm": "Bloqueado por TBM",
+        "null": "Não Informado"
+      },
+      tipo_credito: {
+        "magnetic_card": "Cartão Magnético",
+        "checking_account": "Conta Corrente",
+        "null": "Não Informado"
+      },
+      situacao_beneficio: {
+        "blocked": "Bloqueado",
+        "elegible": "Elegível",
+        "inelegible": "Inelegível",
+        "null": "Não Informado"
+      }
+    };
 
     for (const row of jsonData) {
       const values = headers.map(header => {
-        // Garante que o valor seja uma string antes de tentar usar .replace
-        const val = row[header] === null || row[header] === undefined ? "" : String(row[header]);
-        const escaped = val.replace(/"/g, '""'); // Trata aspas duplas dentro do valor
-        return `"${escaped}"`; // Coloca todos os valores entre aspas duplas
+        let currentValue = row[header];
+        let finalValAsString: string;
+
+        // Etapa 1: Formatação Monetária (se aplicável)
+        if (monetaryColumns.includes(header)) {
+          const originalStr = String(row[header]);
+          if (row[header] !== null && row[header] !== undefined && !isNaN(parseFloat(originalStr)) && isFinite(Number(row[header]))) {
+            currentValue = originalStr.replace('.', ',');
+          }
+        }
+        
+        // Etapa 2: Tradução (se aplicável)
+        const valueKeyForTranslation = currentValue === null ? "null" : String(currentValue);
+
+        if (translations[header as keyof typeof translations] && 
+            translations[header as keyof typeof translations].hasOwnProperty(valueKeyForTranslation)) {
+          finalValAsString = translations[header as keyof typeof translations][valueKeyForTranslation];
+        } else {
+          finalValAsString = currentValue === null || currentValue === undefined ? "" : String(currentValue);
+        }
+        
+        // Etapa 3: Escape de aspas duplas e formatação final para CSV
+        const escaped = finalValAsString.replace(/"/g, '""');
+        return `"${escaped}"`;
       });
       csvRows.push(values.join(";"));
     }

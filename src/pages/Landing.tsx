@@ -111,13 +111,13 @@ const Landing: React.FC = () => {
                 <>
                   Consulta em Lote{" "}
                   <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
-                    Em Breve
+                    Beta
                   </span>
                 </>
               }
               description="Faça consultas em lote para múltiplos cadastros de uma só vez."
               onClick={handleBatchQuery}
-              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))}
+              disabled={false}
             />
 
             <QueryOption
