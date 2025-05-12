@@ -147,6 +147,14 @@ const Landing: React.FC = () => {
             />
 
             <QueryOption
+              icon={<Brain size={32} className="text-white" />}
+              title="Lua AI (inteligência artificial)"
+              description="Desvende insights e automatize tarefas com o poder da nossa Inteligência Artificial."
+              onClick={handleLuaAiQuery}
+              disabled={false}
+            />
+
+            <QueryOption
               icon={<UserPlus size={32} className="text-white" />}
               title="Gestão de Usuarios"
               description="Gerencie e crie novos logins de acesso."
@@ -162,13 +170,7 @@ const Landing: React.FC = () => {
               disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))}
             />
             
-            <QueryOption
-              icon={<Brain size={32} className="text-white" />}
-              title="Lua AI (inteligência artificial)"
-              description="Desvende insights e automatize tarefas com o poder da nossa Inteligência Artificial."
-              onClick={handleLuaAiQuery}
-              disabled={false}
-            />
+            
           </motion.div>
         </motion.div>
       </main>
