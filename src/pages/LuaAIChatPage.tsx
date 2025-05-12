@@ -75,7 +75,7 @@ const LuaAIChatPage: React.FC = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId: user.id,
+          id: user.id,
           message: userMessage.text,
         }),
       });
