@@ -21,7 +21,7 @@ import Button from "../components/Button";
 import LoadingSpinner from "../components/LoadingSpinner"; 
 import { useAuth } from "../context/AuthContext";
 
-const API_BASE = "https://apivieiracred.store";
+const API_BASE = "https://webhook.sistemavieira.com.br";
 
 interface AccountLimits {
   id: number;

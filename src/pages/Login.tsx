@@ -9,7 +9,7 @@ import { useAuth } from "../context/AuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 export const API_BASE = import.meta.env.DEV
-  ? 'https://apivieiracred.store'
+  ? 'https://webhook.sistemavieira.com.br'
   : ''; // em prod ficará vazio → usa path relativo e o vercel.json proxya
 
 

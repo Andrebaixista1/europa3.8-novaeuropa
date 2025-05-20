@@ -8,7 +8,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 
 // Constante para a URL da API
 export const API_BASE = import.meta.env.DEV
-  ? "https://apivieiracred.store"
+  ? "https://webhook.sistemavieira.com.br"
   : "";
 
 // Mensagem inicial com HTML

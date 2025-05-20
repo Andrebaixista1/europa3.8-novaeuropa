@@ -6,7 +6,7 @@ import Button from "./Button";
 import LoadingSpinner from "./LoadingSpinner";
 
 const API_BASE = import.meta.env.DEV
-  ? "https://apivieiracred.store" // API_BASE termina com barra
+  ? "https://webhook.sistemavieira.com.br" // API_BASE termina com barra
   : "";
 
 interface Usuario {

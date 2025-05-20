@@ -1,6 +1,6 @@
 {
   "rewrites":[
     { "source":"/webhook/:path*",
-      "destination":"https://apivieiracred.store/webhook/:path*" }
+      "destination":"https://webhook.sistemavieira.com.br/webhook/:path*" }
   ]
 }

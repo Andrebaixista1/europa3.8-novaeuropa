@@ -8,7 +8,7 @@ import AddUserModal from "../components/AddUserModal";
 import DeleteUserModal from "../components/DeleteUserModal";
 
 const API_BASE = import.meta.env.DEV
-  ? "https://apivieiracred.store"
+  ? "https://webhook.sistemavieira.com.br"
   : "";
 
 interface Usuario {

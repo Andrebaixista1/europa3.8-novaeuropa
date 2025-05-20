@@ -9,7 +9,7 @@ import Button from "../components/Button";
 import AddRechargeModal from "../components/AddRechargeModal"; // Importar o modal
 
 const API_BASE = import.meta.env.DEV
-  ? "https://apivieiracred.store"
+  ? "https://webhook.sistemavieira.com.br"
   : "";
 
 interface RechargeEntry {
