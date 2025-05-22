@@ -1,7 +1,17 @@
 import React, { useEffect } from "react"; // Added useEffect
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Database, Search, LogIn, UserPlus, Wallet, Brain, Landmark, PiggyBank } from "lucide-react";
+import {
+  Database,
+  Search,
+  LogIn,
+  UserPlus,
+  Wallet,
+  Brain,
+  Landmark,
+  PiggyBank,
+  Workflow,
+} from "lucide-react";
 import EuropaLogo from "../components/EuropaLogo";
 import Button from "../components/Button";
 import { useAuth } from "../context/AuthContext";
@@ -22,17 +32,17 @@ const Landing: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'F5' || event.keyCode === 116) {
+      if (event.key === "F5" || event.keyCode === 116) {
         event.preventDefault(); // Previne o comportamento padrão de atualização do F5
-        window.location.href = 'https://consulta-in100.vercel.app/'; // Redireciona para a URL especificada
+        window.location.href = "https://consulta-in100.vercel.app/"; // Redireciona para a URL especificada
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
 
     // Cleanup: remover o event listener quando o componente for desmontado
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, []); // Array de dependências vazio para rodar o efeito apenas uma vez (montagem/desmontagem)
 
@@ -153,8 +163,7 @@ const Landing: React.FC = () => {
               icon={<PiggyBank size={32} className="text-white" />}
               title={
                 <>
-                  Consulta FGTS{" "}
-                  <br></br>
+                  Consulta FGTS <br></br>
                   {/* <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
                     Em Breve
                   </span> */}
@@ -165,11 +174,42 @@ const Landing: React.FC = () => {
               disabled={false}
             />
             <QueryOption
+              icon={<Workflow size={32} className="text-white" />}
+              title={
+                <>
+                  Conexão Whatsapp <br></br>
+                  <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
+                    Em Breve - "Alpha v1.0.2025"
+                  </span>
+                </>
+              }
+              description={
+                <>
+                  <p>
+                    Aqui você conecta seu Whatsapp e faz disparos!{" "}
+                    <span className="relative group inline-block ml-1 cursor-pointer">
+                      <span className="flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-600 rounded-full">
+                        i
+                      </span>
+                      <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 p-2 text-xs text-white bg-black rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
+                        Esta é a primeira versão de disparos de Whatsapp. Por
+                        enquanto, mensagem e tempo já são pré-definidos.
+                      </span>
+                    </span>
+                  </p>
+                  <br />
+                </>
+              }
+              onClick={handleConsultaFGTS}
+              disabled={
+                !(isAuthenticated && (user?.id === 1 || user?.id === 53))
+              }
+            />
+            <QueryOption
               icon={<Brain size={32} className="text-white" />}
               title={
                 <>
-                  Lua AI (Inteligência Artificial){" "}
-                  <br></br>
+                  Lua AI (Inteligência Artificial) <br></br>
                   <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
                     Em Breve
                   </span>
@@ -177,7 +217,9 @@ const Landing: React.FC = () => {
               }
               description="Desvende insights e automatize tarefas com o poder da nossa Inteligência Artificial."
               onClick={handleLuaAiQuery}
-              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))}
+              disabled={
+                !(isAuthenticated && (user?.id === 1 || user?.id === 53))
+              }
             />
 
             <QueryOption
@@ -185,7 +227,9 @@ const Landing: React.FC = () => {
               title="Gestão de Usuarios"
               description="Gerencie e crie novos logins de acesso."
               onClick={() => navigate("/dashboard/create-logins")}
-              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))}
+              disabled={
+                !(isAuthenticated && (user?.id === 1 || user?.id === 53))
+              }
             />
 
             <QueryOption
@@ -193,10 +237,10 @@ const Landing: React.FC = () => {
               title="Gestão de Recargas"
               description="Administração eficiente de recargas de saldo."
               onClick={() => navigate("/dashboard/recharge-user")}
-              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))}
+              disabled={
+                !(isAuthenticated && (user?.id === 1 || user?.id === 53))
+              }
             />
-            
-            
           </motion.div>
         </motion.div>
       </main>
@@ -252,4 +296,3 @@ const QueryOption: React.FC<QueryOptionProps> = ({
 );
 
 export default Landing;
-
