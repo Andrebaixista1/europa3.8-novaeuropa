@@ -155,9 +155,9 @@ const Landing: React.FC = () => {
                 <>
                   Consulta FGTS{" "}
                   <br></br>
-                  <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
+                  {/* <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
                     Em Breve
-                  </span>
+                  </span> */}
                 </>
               }
               description="Consulte clientes com o FGTS liberado."
