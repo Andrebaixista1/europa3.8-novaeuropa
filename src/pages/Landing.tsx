@@ -61,12 +61,29 @@ const Landing: React.FC = () => {
       navigate("/login", { state: { from: "/dashboard/individual" } });
     }
   };
-
+  
   const handleLuaAiQuery = () => {
-    navigate("/dashboard/lua-ai");
+    if (isAuthenticated) {
+      navigate("/dashboard/lua-ai");
+    } else {
+      navigate("/login", { state: { from: "/dashboard/lua-ai" } });
+    }
   };
+  
+  const handleConexaoWhats = () => {
+    if (isAuthenticated) {
+      navigate("/dashboard/conexao-whats");
+    } else {
+      navigate("/login", { state: { from: "/dashboard/conexao-whats" } });
+    }
+  };
+  
   const handleConsultaFGTS = () => {
-    navigate("/dashboard/consulta-fgts");
+    if (isAuthenticated) {
+      navigate("/dashboard/consulta-fgts");
+    } else {
+      navigate("/login", { state: { from: "/dashboard/consulta-fgts" } });
+    }
   };
 
   const handleLoginClick = () => {
@@ -200,7 +217,7 @@ const Landing: React.FC = () => {
                   <br />
                 </>
               }
-              onClick={handleConsultaFGTS}
+              onClick={handleConexaoWhats}
               disabled={
                 !(isAuthenticated && (user?.id === 1 || user?.id === 53))
               }

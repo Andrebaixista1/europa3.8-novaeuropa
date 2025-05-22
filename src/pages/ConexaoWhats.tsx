@@ -49,7 +49,7 @@ interface FGTSResponse {
   parcelas: Parcela[];
 }
 
-const ConsultaFGTS: React.FC = () => {
+const ConexaoWhats: React.FC = () => {
   const { user } = useAuth();
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
@@ -460,4 +460,4 @@ const ConsultaFGTS: React.FC = () => {
   );
 };
 
-export default ConexaoWhatsapp;
+export default ConexaoWhats;
