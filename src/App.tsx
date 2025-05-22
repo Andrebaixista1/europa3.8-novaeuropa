@@ -16,6 +16,7 @@ import IndividualQueryDashboard from "./pages/IndividualQueryDashboard";
 import CreateLogins from "./pages/CreateLogins";
 import UserRecharge from "./pages/UserRecharge"; 
 import LuaAIChatPage from "./pages/LuaAIChatPage"
+import ConsultaFGTS from "./pages/ConsultaFGST";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -64,6 +65,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <LuaAIChatPage /> {/* <<< ALTERADO PARA RENDERIZAR UserRecharge */}
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="dashboard/consulta-fgts" // Rota existente que será usada para UserRecharge
+            element={
+              <ProtectedRoute>
+                <ConsultaFGTS /> {/* <<< ALTERADO PARA RENDERIZAR UserRecharge */}
               </ProtectedRoute>
             }
           />

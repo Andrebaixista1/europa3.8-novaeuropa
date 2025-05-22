@@ -1,7 +1,7 @@
 import React, { useEffect } from "react"; // Added useEffect
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Database, Search, LogIn, UserPlus, Wallet, Brain } from "lucide-react";
+import { Database, Search, LogIn, UserPlus, Wallet, Brain, Landmark, PiggyBank } from "lucide-react";
 import EuropaLogo from "../components/EuropaLogo";
 import Button from "../components/Button";
 import { useAuth } from "../context/AuthContext";
@@ -54,6 +54,9 @@ const Landing: React.FC = () => {
 
   const handleLuaAiQuery = () => {
     navigate("/dashboard/lua-ai");
+  };
+  const handleConsultaFGTS = () => {
+    navigate("/dashboard/consulta-fgts");
   };
 
   const handleLoginClick = () => {
@@ -146,6 +149,21 @@ const Landing: React.FC = () => {
               onClick={handleIndividualQuery}
             />
 
+            <QueryOption
+              icon={<PiggyBank size={32} className="text-white" />}
+              title={
+                <>
+                  Consulta FGTS{" "}
+                  <br></br>
+                  <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
+                    Em Breve
+                  </span>
+                </>
+              }
+              description="Desvende insights e automatize tarefas com o poder da nossa Inteligência Artificial."
+              onClick={handleConsultaFGTS}
+              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))}
+            />
             <QueryOption
               icon={<Brain size={32} className="text-white" />}
               title={
