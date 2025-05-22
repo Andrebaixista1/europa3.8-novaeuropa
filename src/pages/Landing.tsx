@@ -160,9 +160,9 @@ const Landing: React.FC = () => {
                   </span>
                 </>
               }
-              description="Desvende insights e automatize tarefas com o poder da nossa Inteligência Artificial."
+              description="Consulte clientes com o FGTS liberado."
               onClick={handleConsultaFGTS}
-              disabled={!(isAuthenticated && (user?.id === 1 || user?.id === 53))}
+              disabled={false}
             />
             <QueryOption
               icon={<Brain size={32} className="text-white" />}
