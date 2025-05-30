@@ -8,10 +8,10 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
 export const API_BASE = import.meta.env.DEV
   ? 'https://webhook.sistemavieira.com.br'
-  : ''; // em prod ficará vazio → usa path relativo e o vercel.json proxya
-
+  : ''; 
 
 const Login: React.FC = () => {
   const { login, isAuthenticated, error } = useAuth();
@@ -24,13 +24,13 @@ const Login: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // estados do modal
   const [showModal, setShowModal] = useState(false);
   const [modalLogin, setModalLogin] = useState("");
   const [modalNewPassword, setModalNewPassword] = useState("");
 
   useEffect(() => {
     if (isAuthenticated) {
+      toast.success("Login realizado com sucesso!");
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, from]);
@@ -38,6 +38,7 @@ const Login: React.FC = () => {
   useEffect(() => {
     if (error) {
       setErrorMessage(error);
+      toast.error(error);
     }
   }, [error]);
 
@@ -47,7 +48,9 @@ const Login: React.FC = () => {
     setIsSubmitting(true);
 
     if (!username.trim() || !password.trim()) {
-      setErrorMessage("Username and password are required");
+      const errorMsg = "Usuário e senha são obrigatórios";
+      setErrorMessage(errorMsg);
+      toast.error(errorMsg);
       setIsSubmitting(false);
       return;
     }
@@ -55,10 +58,13 @@ const Login: React.FC = () => {
     try {
       const success = await login(username, password);
       if (success) {
+        toast.success("Login realizado com sucesso!");
         navigate(from, { replace: true });
       }
-    } catch {
-      setErrorMessage("An unexpected error occurred");
+    } catch (err) {
+      const errorMsg = "Ocorreu um erro inesperado";
+      setErrorMessage(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -164,7 +170,7 @@ const Login: React.FC = () => {
             }
             className="py-3 mt-2"
           >
-            {isSubmitting ? "Logging in..." : "Log In"}
+            {isSubmitting ? "Entrando..." : "Entrar"}
           </Button>
         </form>
 
@@ -178,7 +184,6 @@ const Login: React.FC = () => {
           Alterar Senha
         </Button>
 
-        
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
@@ -218,14 +223,25 @@ const Login: React.FC = () => {
             </div>
           </div>
         )}
+
         <footer className="bg-white py-6 mt-auto">
-        <div className="container mx-auto px-4 text-center text-neutral-500 text-sm">
-          <p>© 2025 Nova Europa. Todos os direitos reservados. Criado e Desenvolvido por André Felipe | Lua  0.1.2025</p>
-        </div>
-      </footer>
+          <div className="container mx-auto px-4 text-center text-neutral-500 text-sm">
+            <p>© 2025 Nova Europa. Todos os direitos reservados. Criado e Desenvolvido por André Felipe | Lua 0.1.2025</p>
+          </div>
+        </footer>
 
-
-        <ToastContainer position="top-right" autoClose={3000} />
+        <ToastContainer 
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
       </motion.div>
     </div>
   );
