@@ -11,7 +11,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 export const API_BASE = import.meta.env.DEV
   ? 'https://webhook.sistemavieira.com.br'
-  : ''; 
+  : '';
 
 const Login: React.FC = () => {
   const { login, isAuthenticated, error } = useAuth();
@@ -30,7 +30,10 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      toast.success("Login realizado com sucesso!");
+      toast.success("Login realizado com sucesso!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, from]);
@@ -38,7 +41,10 @@ const Login: React.FC = () => {
   useEffect(() => {
     if (error) {
       setErrorMessage(error);
-      toast.error(error);
+      toast.error(error, {
+        position: "top-right",
+        autoClose: 3000,
+      });
     }
   }, [error]);
 
@@ -50,7 +56,10 @@ const Login: React.FC = () => {
     if (!username.trim() || !password.trim()) {
       const errorMsg = "Usuário e senha são obrigatórios";
       setErrorMessage(errorMsg);
-      toast.error(errorMsg);
+      toast.error(errorMsg, {
+        position: "top-right",
+        autoClose: 3000,
+      });
       setIsSubmitting(false);
       return;
     }
@@ -58,13 +67,19 @@ const Login: React.FC = () => {
     try {
       const success = await login(username, password);
       if (success) {
-        toast.success("Login realizado com sucesso!");
+        toast.success("Login realizado com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
         navigate(from, { replace: true });
       }
     } catch (err) {
       const errorMsg = "Ocorreu um erro inesperado";
       setErrorMessage(errorMsg);
-      toast.error(errorMsg);
+      toast.error(errorMsg, {
+        position: "top-right",
+        autoClose: 3000,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -72,7 +87,10 @@ const Login: React.FC = () => {
 
   const handleChangePassword = async () => {
     if (!modalLogin.trim() || !modalNewPassword.trim()) {
-      toast.error("Login e nova senha são obrigatórios");
+      toast.error("Login e nova senha são obrigatórios", {
+        position: "top-right",
+        autoClose: 3000,
+      });
       return;
     }
     try {
@@ -89,15 +107,24 @@ const Login: React.FC = () => {
       );
       if (!res.ok) {
         const { message } = await res.json();
-        toast.error(message || "Erro ao alterar senha");
+        toast.error(message || "Erro ao alterar senha", {
+          position: "top-right",
+          autoClose: 3000,
+        });
       } else {
-        toast.success("Senha alterada com sucesso");
+        toast.success("Senha alterada com sucesso", {
+          position: "top-right",
+          autoClose: 3000,
+        });
         setShowModal(false);
         setModalLogin("");
         setModalNewPassword("");
       }
     } catch {
-      toast.error("Erro na requisição");
+      toast.error("Erro na requisição", {
+        position: "top-right",
+        autoClose: 3000,
+      });
     }
   };
 
@@ -230,7 +257,7 @@ const Login: React.FC = () => {
           </div>
         </footer>
 
-        <ToastContainer 
+        <ToastContainer
           position="top-right"
           autoClose={3000}
           hideProgressBar={false}
@@ -240,7 +267,8 @@ const Login: React.FC = () => {
           pauseOnFocusLoss
           draggable
           pauseOnHover
-          theme="light"
+          theme="colored"
+          style={{ zIndex: 9999 }}
         />
       </motion.div>
     </div>
