@@ -17,7 +17,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 
-export const API_BASE = 'https://webhook.sistemavieira.com.br/webhook'; // em prod ficará vazio → usa path relativo e o vercel.json proxya
+export const API_BASE = 'https://n8n.sistemavieira.com.br/webhook'; // em prod ficará vazio → usa path relativo e o vercel.json proxya
 
 interface FormErrors {
   nome?: string;
