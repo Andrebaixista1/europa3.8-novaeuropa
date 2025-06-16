@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 // em /src/config.ts ou logo no topo do AuthContext.tsx
 export const API_BASE = import.meta.env.DEV
-  ? 'https://webhook.sistemavieira.com.br'
+  ? 'https://n8n.sistemavieira.com.br'
   : ''; // em prod ficará vazio → usa path relativo e o vercel.json proxya
 
 

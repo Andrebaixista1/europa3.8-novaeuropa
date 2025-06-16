@@ -23,7 +23,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-export const API_BASE = 'https://webhook.sistemavieira.com.br'; // em prod ficará vazio → usa path relativo e o vercel.json proxya
+export const API_BASE = 'https://n8n.sistemavieira.com.br'; // em prod ficará vazio → usa path relativo e o vercel.json proxya
 
 
 interface FormErrors {

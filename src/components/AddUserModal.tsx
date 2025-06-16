@@ -6,7 +6,7 @@ import Button from "./Button";
 import LoadingSpinner from "./LoadingSpinner";
 
 const API_BASE = import.meta.env.DEV
-  ? "https://webhook.sistemavieira.com.br"
+  ? "https://n8n.sistemavieira.com.br"
   : "";
 
 interface Props {
