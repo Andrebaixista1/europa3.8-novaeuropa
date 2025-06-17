@@ -6,12 +6,10 @@ import { useAuth } from "../context/AuthContext";
 import { Send } from "lucide-react";
 import LoadingSpinner from "../components/LoadingSpinner";
 
-// Constante para a URL da API
 export const API_BASE = import.meta.env.DEV
   ? "https://n8n.sistemavieira.com.br"
   : "";
 
-// Mensagem inicial com HTML
 const saudacaoLua = `
   Olá! 🌙✨<br/>
   Eu sou a <strong>Lua</strong>, a inteligência artificial da <strong>Nova Europa</strong> 🤖💙<br/>
@@ -47,7 +45,6 @@ const LuaAIChatPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Mantém a rolagem sempre lá embaixo
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -56,7 +53,6 @@ const LuaAIChatPage: React.FC = () => {
   const handleSendMessage = async () => {
     if (!inputValue.trim() || !user) return;
 
-    // 1) adiciona mensagem do usuário na UI
     const userMessage: ChatMessage = {
       id: "user-" + Date.now(),
       text: inputValue.trim(),
@@ -68,16 +64,10 @@ const LuaAIChatPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // 2) chama o endpoint correto
       const res = await fetch(`${API_BASE}/webhook/api/lua-ia`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: user.id,
-          message: userMessage.text,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: user.id, message: userMessage.text }),
       });
 
       if (!res.ok) {
@@ -89,25 +79,20 @@ const LuaAIChatPage: React.FC = () => {
         throw new Error(err);
       }
 
-      // 3) parse do array que chega: [{ id, message }]
-      const data = await res.json();
-      if (!Array.isArray(data) || data.length === 0) {
+      // CORREÇÃO: Alterado de 'mensagem' para 'messagem' para corresponder à resposta do backend
+      const { messagem } = (await res.json()) as { messagem: string };
+      if (typeof messagem !== "string") {
         throw new Error("Resposta inesperada da Lua AI.");
       }
-      const { id: conversationId, message: aiReply } = data[0];
 
-      // 4) adiciona resposta da IA na UI
       const aiMessage: ChatMessage = {
-        id: `ai-${conversationId}-${Date.now()}`,
-        text: aiReply,
+        id: `ai-${Date.now()}`,
+        text: messagem,
         sender: "ai",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMessage]);
-
-      console.log("ID de conversa:", conversationId);
     } catch (error: any) {
-      console.error(error);
       setMessages((prev) => [
         ...prev,
         {
@@ -134,7 +119,6 @@ const LuaAIChatPage: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="bg-white border border-neutral-200 rounded-xl shadow-xl p-4 sm:p-6 w-full max-w-3xl flex flex-col h-[calc(100vh-200px)] sm:h-[calc(100vh-220px)]"
         >
-          {/* ChatWindow */}
           <div className="flex-1 overflow-y-auto mb-4 pr-2 space-y-4">
             {messages.map((msg) => (
               <motion.div
@@ -157,13 +141,11 @@ const LuaAIChatPage: React.FC = () => {
                   }`}
                 >
                   {msg.sender === "ai" ? (
-                    // renderiza HTML para as mensagens da IA
                     <p
                       className="text-sm whitespace-pre-wrap"
                       dangerouslySetInnerHTML={{ __html: msg.text }}
                     />
                   ) : (
-                    // usuário continua renderizando texto puro
                     <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                   )}
                   {msg.timestamp && (
@@ -200,7 +182,6 @@ const LuaAIChatPage: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* ChatInput */}
           <div className="mt-auto pt-4 border-t border-neutral-200">
             <div className="flex items-center space-x-2">
               <input
@@ -231,3 +212,4 @@ const LuaAIChatPage: React.FC = () => {
 };
 
 export default LuaAIChatPage;
+

@@ -228,15 +228,13 @@ const Landing: React.FC = () => {
                 <>
                   Lua AI (Inteligência Artificial) <br></br>
                   <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
-                    Em Breve
+                    Beta
                   </span>
                 </>
               }
               description="Desvende insights e automatize tarefas com o poder da nossa Inteligência Artificial."
               onClick={handleLuaAiQuery}
-              disabled={
-                !(isAuthenticated && (user?.id === 1 || user?.id === 53))
-              }
+              disabled={false}
             />
 
             <QueryOption
