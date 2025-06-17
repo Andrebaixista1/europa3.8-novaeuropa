@@ -45,6 +45,7 @@ const LuaAIChatPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  // Rola automaticamente para a última mensagem
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -53,6 +54,7 @@ const LuaAIChatPage: React.FC = () => {
   const handleSendMessage = async () => {
     if (!inputValue.trim() || !user) return;
 
+    // Adiciona mensagem do usuário na UI
     const userMessage: ChatMessage = {
       id: "user-" + Date.now(),
       text: inputValue.trim(),
@@ -79,15 +81,18 @@ const LuaAIChatPage: React.FC = () => {
         throw new Error(err);
       }
 
-      // CORREÇÃO: Alterado de 'mensagem' para 'messagem' para corresponder à resposta do backend
-      const { messagem } = (await res.json()) as { messagem: string };
-      if (typeof messagem !== "string") {
+      // Tratamento da resposta: pode vir como objeto ou array de objetos
+      const data = await res.json();
+      const first = Array.isArray(data) ? data[0] : data;
+      const output = first.output;
+      if (typeof output !== "string") {
         throw new Error("Resposta inesperada da Lua AI.");
       }
 
+      // Adiciona resposta da AI na UI
       const aiMessage: ChatMessage = {
         id: `ai-${Date.now()}`,
-        text: messagem,
+        text: output,
         sender: "ai",
         timestamp: new Date(),
       };
@@ -112,6 +117,7 @@ const LuaAIChatPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
       <DashboardHeader title="Chat com Lua AI" />
+
       <main className="flex-1 container mx-auto px-4 py-8 flex flex-col items-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -201,7 +207,11 @@ const LuaAIChatPage: React.FC = () => {
                 disabled={isLoading || !inputValue.trim()}
                 className="!px-4 !py-3"
               >
-                {isLoading ? <LoadingSpinner size="sm" /> : <Send size={18} />}
+                {isLoading ? (
+                  <LoadingSpinner size="sm" />
+                ) : (
+                  <Send size={18} />
+                )}
               </Button>
             </div>
           </div>
@@ -212,4 +222,3 @@ const LuaAIChatPage: React.FC = () => {
 };
 
 export default LuaAIChatPage;
-
