@@ -309,7 +309,7 @@ const Landing: React.FC = () => {
               }
               onClick={handleConexaoWhats}
               disabled={
-                !(isAuthenticated && (user?.id === 1 || user?.id === 53))
+                !(isAuthenticated && user?.hierarquia === 1)
               }
             />
 
@@ -319,7 +319,7 @@ const Landing: React.FC = () => {
               description="Gerencie e crie novos logins de acesso."
               onClick={() => navigate("/dashboard/create-logins")}
               disabled={
-                !(isAuthenticated && (user?.id === 1 || user?.id === 53))
+                !(isAuthenticated && user?.hierarquia === 1)
               }
             />
 
@@ -329,7 +329,7 @@ const Landing: React.FC = () => {
               description="Administração eficiente de recargas de saldo."
               onClick={() => navigate("/dashboard/recharge-user")}
               disabled={
-                !(isAuthenticated && (user?.id === 1 || user?.id === 53))
+                !(isAuthenticated && user?.hierarquia === 1)
               }
             />
           </motion.div>
