@@ -11,6 +11,7 @@ import {
   Landmark,
   PiggyBank,
   Workflow,
+  LogOut,
 } from "lucide-react";
 import EuropaLogo from "../components/EuropaLogo";
 import Button from "../components/Button";
@@ -28,7 +29,7 @@ interface QueryOptionProps {
 
 const Landing: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -123,7 +124,18 @@ const Landing: React.FC = () => {
               </Button>
             </motion.div>
           ) : (
-            <span className="text-neutral-600">Bem-vindo, {user.username}</span>
+            <div className="flex items-center gap-4">
+              <span className="text-neutral-600">Bem-vindo, {user.username}</span>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => { logout(); navigate("/login"); }}
+                className="flex items-center text-neutral-600 hover:text-primary-600 transition-colors border border-neutral-200 rounded px-3 py-1"
+              >
+                <LogOut size={18} className="mr-1" />
+                <span>Logout</span>
+              </motion.button>
+            </div>
           )}
         </div>
       </header>
