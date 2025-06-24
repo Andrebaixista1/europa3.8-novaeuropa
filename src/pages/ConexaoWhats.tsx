@@ -7,9 +7,13 @@ import Button from "../components/Button";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 
-export const API_BASE = import.meta.env.DEV
+export const N8N_WS_BASE = import.meta.env.DEV
   ? "https://n8n.sistemavieira.com.br/webhook"
   : "";
+
+export const N8N_NEW_CONN_URL = import.meta.env.DEV
+  ? "https://n8n.sistemavieira.com.br/webhook/api/nova-conexao"
+  : "/api/nova-conexao";
 
 const DEPARTAMENTO_API = "https://api.zapresponder.com.br/api/departamento/all";
 const DEPARTAMENTO_TOKEN =
@@ -29,6 +33,7 @@ interface Connection {
 interface Departamento {
   _id: string;
   nome: string;
+  userId: string;
 }
 
 const DISPAROS_LIMIT = 1;
@@ -41,60 +46,59 @@ const ConexaoWhats: React.FC = () => {
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [qrImage, setQrImage] = useState<string>("");
   const [form, setForm] = useState({
     nome: "",
     numero: "+55 11 ",
     equipeId: "",
     isDisparos: false,
   });
+  const [isConnecting, setIsConnecting] = useState(false);
 
-  // Busca conexões existentes
-  const fetchConnections = async () => {
+  async function fetchConnections() {
     if (!user) return;
     try {
-      const res = await fetch(`${API_BASE}/api/conexoes`, {
+      const res = await fetch(`${N8N_WS_BASE}/api/conexoes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id_usuario: user.id }),
       });
       if (res.status === 200) {
         const data = await res.json();
-        const mapped: Connection[] = data.map((item: any) => ({
-          id: item.id,
-          nome: item.nome,
-          numero: item.numero_zap,
-          equipe: item.equipe,
-          tipo:
-            item.tipo_conexao === "Disparos Evolution"
-              ? "Disparos Evolution"
-              : "Zap Responder",
-          status: item.status === 1 ? "Conectado" : "Desconectado",
-          dataCadastro: new Date(item.data_cadastro).toLocaleString("pt-BR", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          qrCode: item.qr_code,
-        }));
-        setConnections(mapped);
+        setConnections(
+          data.map((item: any) => ({
+            id: item.id,
+            nome: item.nome,
+            numero: item.numero_zap,
+            equipe: item.equipe,
+            tipo:
+              item.tipo_conexao === "Disparos Evolution"
+                ? "Disparos Evolution"
+                : "Zap Responder",
+            status: item.status === 1 ? "Conectado" : "Desconectado",
+            dataCadastro: new Date(item.data_cadastro).toLocaleString("pt-BR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            qrCode: item.qr_code,
+          }))
+        );
       } else if (res.status === 400) {
         const err = await res.json();
         toast.info(err.mensagem, { autoClose: 3000 });
         setConnections([]);
       } else {
-        throw new Error("Erro desconhecido");
+        throw new Error("Erro desconhecido ao carregar conexões");
       }
-    } catch (error: any) {
-      toast.error(error.message || "Falha ao carregar conexões", {
-        autoClose: 3000,
-      });
+    } catch (err: any) {
+      toast.error(err.message, { autoClose: 3000 });
     }
-  };
+  }
 
-  // Busca lista de departamentos (equipes)
-  const fetchDepartamentos = async () => {
+  async function fetchDepartamentos() {
     try {
       const res = await fetch(DEPARTAMENTO_API, {
         headers: {
@@ -105,12 +109,11 @@ const ConexaoWhats: React.FC = () => {
       if (!res.ok) throw new Error("Não foi possível carregar equipes");
       const json = await res.json();
       setDepartamentos(json.departamentos || []);
-    } catch (error: any) {
-      toast.error(error.message, { autoClose: 3000 });
+    } catch (err: any) {
+      toast.error(err.message, { autoClose: 3000 });
     }
-  };
+  }
 
-  // Carrega conexões ao montar e sempre que a aba ganha foco
   useEffect(() => {
     fetchConnections();
     const onFocus = () => fetchConnections();
@@ -122,72 +125,94 @@ const ConexaoWhats: React.FC = () => {
     (c) => c.tipo === "Disparos Evolution"
   ).length;
 
-  // Abertura/fechamento de modais
-  const openAddModal = () => {
+  function openAddModal() {
     fetchDepartamentos();
     setIsModalOpen(true);
-  };
-  const closeAddModal = () => {
+  }
+  function closeAddModal() {
     setForm({ nome: "", numero: "+55 11 ", equipeId: "", isDisparos: false });
     setIsModalOpen(false);
-  };
-  const openQrModal = () => setIsQrModalOpen(true);
-  const closeQrModal = () => setIsQrModalOpen(false);
-  const openDeleteModal = (id: number) => {
+  }
+  function openQrModal() {
+    setIsQrModalOpen(true);
+  }
+  function closeQrModal() {
+    setIsQrModalOpen(false);
+  }
+  function openDeleteModal(id: number) {
     setDeleteTargetId(id);
     setIsDeleteModalOpen(true);
-  };
-  const closeDeleteModal = () => {
+  }
+  function closeDeleteModal() {
     setDeleteTargetId(null);
     setIsDeleteModalOpen(false);
-  };
+  }
 
-  // Validações e limite de Disparos
-  const handleConnect = () => {
+  async function handleConnect() {
     if (!form.nome.trim()) {
       toast.error("Nome do WhatsApp é obrigatório", { autoClose: 3000 });
       return;
     }
-    // if (!form.numero.includes("99999-9999")) {
-    //   toast.error("Número do WhatsApp é obrigatório", { autoClose: 3000 });
-    //   return;
-    // }
     if (form.isDisparos && totalDisparos >= DISPAROS_LIMIT) {
-      toast.error("Limite de conexões de disparos acabou", { autoClose: 3000 });
+      toast.error("Limite de conexões de disparos acabou", {
+        autoClose: 3000,
+      });
       return;
     }
-    openQrModal();
-  };
-
-  // Concluir (para teste local)
-  const handleConclude = () => {
+    if (!form.equipeId) {
+      toast.error("Selecione uma equipe", { autoClose: 3000 });
+      return;
+    }
     const dept = departamentos.find((d) => d._id === form.equipeId);
-    const newConn: Connection = {
-      id: connections.length + 1,
-      nome: form.nome,
-      numero: form.numero,
-      equipe: dept?.nome || "",
-      tipo: form.isDisparos ? "Disparos Evolution" : "Zap Responder",
-      status: "Conectado",
-      dataCadastro: new Date().toLocaleString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      qrCode: "https://via.placeholder.com/150",
-    };
-    setConnections((prev) => [...prev, newConn]);
+    if (!dept) {
+      toast.error("Equipe selecionada não encontrada", { autoClose: 3000 });
+      return;
+    }
+
+    setIsConnecting(true);
+    try {
+      const payload = {
+        id_usuario: user!.id,
+        nome: form.nome,
+        telefone: form.numero,
+        sessionId: form.equipeId,
+        imagemId: dept.userId,
+        tipo_conexao: form.isDisparos
+          ? "Disparos Evolution"
+          : "Zap Responder",
+        status: 1,
+      };
+      const res = await fetch(N8N_NEW_CONN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.mensagem || "Erro ao criar conexão");
+      }
+      const json = await res.json();
+      setQrImage(json.qrcode);
+      toast.success(json.mensagem, { autoClose: 3000 });
+      await fetchConnections();
+      openQrModal();
+    } catch (err: any) {
+      toast.error(err.message, { autoClose: 3000 });
+    } finally {
+      setIsConnecting(false);
+    }
+  }
+
+  function handleQrClose() {
+    setQrImage("");
     closeQrModal();
     closeAddModal();
-  };
+  }
 
-  // Exclusão via API e atualização
-  const confirmDelete = async () => {
+  async function confirmDelete() {
     if (!user || deleteTargetId === null) return;
     try {
-      const res = await fetch(`${API_BASE}/api/excluir-conexoes`, {
+      const res = await fetch(`${N8N_WS_BASE}/api/excluir-conexoes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -201,20 +226,17 @@ const ConexaoWhats: React.FC = () => {
       }
       toast.success("Conexão excluída com sucesso!", { autoClose: 3000 });
       await fetchConnections();
-    } catch (error: any) {
-      toast.error(error.message || "Falha ao excluir conexão", {
-        autoClose: 3000,
-      });
+    } catch (err: any) {
+      toast.error(err.message, { autoClose: 3000 });
     } finally {
       closeDeleteModal();
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
       <DashboardHeader title="Conexões WhatsApp" />
       <div className="container mx-auto px-4 py-8 flex-1">
-        {/* CARDS */}
         <motion.div
           className="flex gap-6 mb-6"
           initial={{ opacity: 0, y: 20 }}
@@ -240,7 +262,7 @@ const ConexaoWhats: React.FC = () => {
                   <Info
                     size={16}
                     className="ml-1 text-neutral-500 cursor-pointer"
-                    title="Aqui você poderá ver a quantidade de Conexões ainda disponíveis para a API de disparos do Evolution (Kairo)"
+                    title="Aqui você pode ver quantas conexões de disparos estão ativas e seu limite"
                   />
                 </div>
               ),
@@ -264,14 +286,12 @@ const ConexaoWhats: React.FC = () => {
           ))}
         </motion.div>
 
-        {/* BOTÃO ADICIONAR */}
         <div className="mb-4">
           <Button variant="primary" onClick={openAddModal}>
             Adicionar
           </Button>
         </div>
 
-        {/* TABELA */}
         <div className="bg-white border border-neutral-200 rounded-xl shadow overflow-x-auto">
           <table className="min-w-full divide-y divide-neutral-200">
             <thead className="bg-neutral-100">
@@ -298,12 +318,24 @@ const ConexaoWhats: React.FC = () => {
             <tbody className="bg-white divide-y divide-neutral-200">
               {connections.map((c) => (
                 <tr key={c.id}>
-                  <td className="px-6 py-4 text-sm text-neutral-700">{c.id}</td>
-                  <td className="px-6 py-4 text-sm text-neutral-700">{c.nome}</td>
-                  <td className="px-6 py-4 text-sm text-neutral-700">{c.numero}</td>
-                  <td className="px-6 py-4 text-sm text-neutral-700">{c.equipe}</td>
-                  <td className="px-6 py-4 text-sm text-neutral-700">{c.tipo}</td>
-                  <td className="px-6 py-4 text-sm text-neutral-700">{c.status}</td>
+                  <td className="px-6 py-4 text-sm text-neutral-700">
+                    {c.id}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-neutral-700">
+                    {c.nome}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-neutral-700">
+                    {c.numero}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-neutral-700">
+                    {c.equipe}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-neutral-700">
+                    {c.tipo}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-neutral-700">
+                    {c.status}
+                  </td>
                   <td className="px-6 py-4 text-sm text-neutral-700">
                     {c.dataCadastro}
                   </td>
@@ -321,7 +353,6 @@ const ConexaoWhats: React.FC = () => {
           </table>
         </div>
 
-        {/* MODAL DE ADIÇÃO */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <motion.div
@@ -333,7 +364,6 @@ const ConexaoWhats: React.FC = () => {
                 Nova Conexão WhatsApp
               </h2>
               <div className="space-y-4">
-                {/* Nome do WhatsApp */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Nome do WhatsApp
@@ -342,13 +372,11 @@ const ConexaoWhats: React.FC = () => {
                     type="text"
                     value={form.nome}
                     onChange={(e) =>
-                      setForm((prev) => ({ ...prev, nome: e.target.value }))
+                      setForm((f) => ({ ...f, nome: e.target.value }))
                     }
                     className="europa-input w-full"
                   />
                 </div>
-
-                {/* Número do WhatsApp */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Número do WhatsApp
@@ -357,14 +385,12 @@ const ConexaoWhats: React.FC = () => {
                     mask="+55 11 99999-9999"
                     value={form.numero}
                     onChange={(e) =>
-                      setForm((prev) => ({ ...prev, numero: e.target.value }))
+                      setForm((f) => ({ ...f, numero: e.target.value }))
                     }
                   >
                     <input type="text" className="europa-input w-full" />
                   </InputMask>
                 </div>
-
-                {/* Nome da Equipe */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Nome da Equipe
@@ -372,7 +398,7 @@ const ConexaoWhats: React.FC = () => {
                   <select
                     value={form.equipeId}
                     onChange={(e) =>
-                      setForm((prev) => ({ ...prev, equipeId: e.target.value }))
+                      setForm((f) => ({ ...f, equipeId: e.target.value }))
                     }
                     className="europa-input w-full"
                   >
@@ -384,8 +410,6 @@ const ConexaoWhats: React.FC = () => {
                     ))}
                   </select>
                 </div>
-
-                {/* Switch Zap / Disparos */}
                 <div className="flex items-center justify-center gap-4 mt-4">
                   <span className="text-sm font-medium text-neutral-700">
                     Zap Responder
@@ -393,10 +417,7 @@ const ConexaoWhats: React.FC = () => {
                   <button
                     type="button"
                     onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        isDisparos: !prev.isDisparos,
-                      }))
+                      setForm((f) => ({ ...f, isDisparos: !f.isDisparos }))
                     }
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:ring-2 focus:ring-primary-600 ${
                       form.isDisparos ? "bg-success-500" : "bg-neutral-300"
@@ -413,20 +434,22 @@ const ConexaoWhats: React.FC = () => {
                   </span>
                 </div>
               </div>
-
               <div className="mt-6 flex justify-end space-x-2">
                 <Button variant="secondary" onClick={closeAddModal}>
                   Cancelar
                 </Button>
-                <Button variant="primary" onClick={handleConnect}>
-                  Conectar
+                <Button
+                  variant="primary"
+                  onClick={handleConnect}
+                  disabled={isConnecting}
+                >
+                  {isConnecting ? "Conectando…" : "Conectar"}
                 </Button>
               </div>
             </motion.div>
           </div>
         )}
 
-        {/* MODAL QR */}
         {isQrModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <motion.div
@@ -438,18 +461,17 @@ const ConexaoWhats: React.FC = () => {
                 Escaneie o QR Code
               </h2>
               <img
-                src="https://via.placeholder.com/200?text=QR+Code"
+                src={qrImage}
                 alt="QR Code"
-                className="mx-auto mb-4"
+                className="mx-auto mb-4 max-h-64"
               />
-              <Button variant="primary" onClick={handleConclude}>
+              <Button variant="primary" onClick={handleQrClose}>
                 Concluir
               </Button>
             </motion.div>
           </div>
         )}
 
-        {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
         {isDeleteModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <motion.div

@@ -268,8 +268,6 @@ const Landing: React.FC = () => {
           </p>
         </div>
       </footer>
-
-      <ToastContainer position="top-right" autoClose={2000} />
     </div>
   );
 };
