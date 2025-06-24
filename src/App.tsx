@@ -8,7 +8,6 @@ import {
 } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import GlobalRefreshRedirect from './utils/GlobalRefreshRedirect '; // Ajuste o caminho conforme necessário
 import Login from "./pages/Login";
 import Landing from "./pages/Landing";
 import BatchQueryDashboard from "./pages/BatchQueryDashboard";
@@ -25,7 +24,6 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-      <GlobalRefreshRedirect>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Landing />} />
@@ -88,7 +86,6 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <ToastContainer position="bottom-right" autoClose={3000} />
-        </GlobalRefreshRedirect>
       </Router>
     </AuthProvider>
   );
