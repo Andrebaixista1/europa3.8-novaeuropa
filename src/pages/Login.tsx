@@ -256,20 +256,6 @@ const Login: React.FC = () => {
             <p>© 2025 Nova Europa. Todos os direitos reservados. Criado e Desenvolvido por André Felipe | Lua 0.1.2025</p>
           </div>
         </footer>
-
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="colored"
-          style={{ zIndex: 9999 }}
-        />
       </motion.div>
     </div>
   );
