@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"; // Added useEffect
+import React, { useEffect, useState, useRef, ReactNode } from "react"; // Adiciona useState, useRef e ReactNode
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -20,12 +20,66 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 interface QueryOptionProps {
-  icon: React.ReactNode;
-  title: React.ReactNode;
-  description: string;
+  icon: ReactNode;
+  title: ReactNode;
+  description: ReactNode;
   onClick: () => void;
   disabled?: boolean;
 }
+
+// Componente para efeito de máquina de escrever rotativo
+const TypewriterRotator: React.FC<{ frases: string[] }> = ({ frases }) => {
+  const [index, setIndex] = useState(0);
+  const [displayed, setDisplayed] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [charIndex, setCharIndex] = useState(0);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const fraseAtual = frases[index];
+    if (!deleting && charIndex < fraseAtual.length) {
+      timeoutRef.current = setTimeout(() => {
+        setDisplayed(fraseAtual.slice(0, charIndex + 1));
+        setCharIndex((c) => c + 1);
+      }, 50);
+    } else if (!deleting && charIndex === fraseAtual.length) {
+      timeoutRef.current = setTimeout(() => {
+        setDeleting(true);
+      }, 3000);
+    } else if (deleting && charIndex > 0) {
+      timeoutRef.current = setTimeout(() => {
+        setDisplayed(fraseAtual.slice(0, charIndex - 1));
+        setCharIndex((c) => c - 1);
+      }, 30);
+    } else if (deleting && charIndex === 0) {
+      timeoutRef.current = setTimeout(() => {
+        setDeleting(false);
+        setIndex((i) => (i + 1) % frases.length);
+      }, 500);
+    }
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [charIndex, deleting, frases, index]);
+
+  return (
+    <span className="inline-block min-h-[2.5em]">
+      {displayed}
+      <span className="blinking-cursor">|</span>
+      <style>{`
+        .blinking-cursor {
+          display: inline-block;
+          width: 1ch;
+          animation: blink 1s steps(1) infinite;
+        }
+        @keyframes blink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0; }
+        }
+      `}</style>
+    </span>
+  );
+};
 
 const Landing: React.FC = () => {
   const navigate = useNavigate();
@@ -167,6 +221,30 @@ const Landing: React.FC = () => {
             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mx-auto"
           >
             <QueryOption
+              icon={<Brain size={32} className="text-white" />}
+              title={
+                <>
+                  Lua AI (Inteligência Artificial) <br></br>
+                  <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
+                    Beta
+                  </span>
+                </>
+              }
+              description={
+                <TypewriterRotator
+                  frases={[
+                    "A inteligência da VieiraCred chegou para facilitar.",
+                    "A LUA responde rápido e direto.",
+                    "FGTS disponível na LUA, sem complicação.",
+                    "Consulta simples.",
+                    "Dois jeitos fáceis para consultar seu FGTS. No Card de Consulta FGTS ou aqui mesmo na LUA."
+                  ]}
+                />
+              }
+              onClick={handleLuaAiQuery}
+              disabled={false}
+            />
+            <QueryOption
               icon={<Database size={32} className="text-white" />}
               title={
                 <>
@@ -234,20 +312,6 @@ const Landing: React.FC = () => {
                 !(isAuthenticated && (user?.id === 1 || user?.id === 53))
               }
             />
-            <QueryOption
-              icon={<Brain size={32} className="text-white" />}
-              title={
-                <>
-                  Lua AI (Inteligência Artificial) <br></br>
-                  <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
-                    Beta
-                  </span>
-                </>
-              }
-              description="Desvende insights e automatize tarefas com o poder da nossa Inteligência Artificial."
-              onClick={handleLuaAiQuery}
-              disabled={false}
-            />
 
             <QueryOption
               icon={<UserPlus size={32} className="text-white" />}
@@ -311,9 +375,9 @@ const QueryOption: React.FC<QueryOptionProps> = ({
       </div>
     </div>
     <h3 className="text-xl font-semibold mb-3">{title}</h3>
-    <p className={`${disabled ? "text-yellow-600" : "text-neutral-600"} mb-6`}>
+    <div className={`${disabled ? "text-yellow-600" : "text-neutral-600"} mb-6`}>
       {description}
-    </p>
+    </div>
     <Button variant="primary" fullWidth disabled={disabled}>
       Começar Agora
     </Button>
