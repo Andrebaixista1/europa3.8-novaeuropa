@@ -118,14 +118,14 @@ const LuaAIChatPage: React.FC = () => {
     <div className="min-h-screen bg-neutral-50 flex flex-col">
       <DashboardHeader title="Chat com Lua AI" />
 
-      <main className="flex-1 container mx-auto px-4 py-8 flex flex-col items-center">
+      <main className="flex-1 w-full flex flex-col justify-center items-center px-2 sm:px-6 md:px-16 py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-white border border-neutral-200 rounded-xl shadow-xl p-4 sm:p-6 w-full max-w-3xl flex flex-col h-[calc(100vh-200px)] sm:h-[calc(100vh-220px)]"
+          className="bg-white border border-neutral-200 rounded-xl shadow-xl p-2 sm:p-4 md:p-6 w-full max-w-4xl h-full flex flex-col"
         >
-          <div className="flex-1 overflow-y-auto mb-4 pr-2 space-y-4">
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1 sm:pr-2 space-y-3 sm:space-y-4">
             {messages.map((msg) => (
               <motion.div
                 key={msg.id}
@@ -140,7 +140,7 @@ const LuaAIChatPage: React.FC = () => {
                 }`}
               >
                 <div
-                  className={`max-w-[70%] p-3 rounded-lg shadow ${
+                  className={`max-w-[90%] sm:max-w-[80%] md:max-w-[70%] p-2 sm:p-3 rounded-lg shadow ${
                     msg.sender === "user"
                       ? "bg-blue-500 text-white rounded-br-none"
                       : "bg-neutral-200 text-neutral-800 rounded-bl-none"
@@ -188,8 +188,8 @@ const LuaAIChatPage: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="mt-auto pt-4 border-t border-neutral-200">
-            <div className="flex items-center space-x-2">
+          <div className="pt-4 border-t border-neutral-200 bg-white">
+            <div className="flex flex-col sm:flex-row items-center gap-2">
               <input
                 type="text"
                 value={inputValue}
@@ -198,20 +198,16 @@ const LuaAIChatPage: React.FC = () => {
                   e.key === "Enter" && !isLoading && handleSendMessage()
                 }
                 placeholder="Digite sua mensagem para Lua..."
-                className="europa-input flex-1 !py-3"
+                className="flex-1 border border-neutral-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-200 bg-neutral-50 w-full sm:w-auto"
                 disabled={isLoading}
               />
               <Button
                 variant="primary"
                 onClick={handleSendMessage}
                 disabled={isLoading || !inputValue.trim()}
-                className="!px-4 !py-3"
+                className="w-full sm:w-auto px-4 py-2"
               >
-                {isLoading ? (
-                  <LoadingSpinner size="sm" />
-                ) : (
-                  <Send size={18} />
-                )}
+                <Send size={18} />
               </Button>
             </div>
           </div>
