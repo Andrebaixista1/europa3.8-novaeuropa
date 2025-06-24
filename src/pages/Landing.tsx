@@ -63,7 +63,7 @@ const TypewriterRotator: React.FC<{ frases: string[] }> = ({ frases }) => {
   }, [charIndex, deleting, frases, index]);
 
   return (
-    <span className="inline-block min-h-[2.5em]">
+    <span className="inline-block min-h-[2.5em]" style={{ textTransform: 'none' }}>
       {displayed}
       <span className="blinking-cursor">|</span>
       <style>{`
@@ -234,10 +234,10 @@ const Landing: React.FC = () => {
                 <TypewriterRotator
                   frases={[
                     "A inteligência da VieiraCred chegou para facilitar.",
-                    "A LUA responde rápido e direto.",
-                    "FGTS disponível na LUA, sem complicação.",
+                    "A Lua responde rápido e direto.",
+                    "FGTS disponível na Lua, sem complicação.",
                     "Consulta simples.",
-                    "Dois jeitos fáceis para consultar seu FGTS. No Card de Consulta FGTS ou aqui mesmo na LUA."
+                    "Dois jeitos fáceis para consultar seu FGTS. No Card de Consulta FGTS ou aqui mesmo na Lua."
                   ]}
                 />
               }
