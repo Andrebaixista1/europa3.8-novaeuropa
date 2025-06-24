@@ -9,11 +9,11 @@ import { useAuth } from "../context/AuthContext";
 
 export const N8N_WS_BASE = import.meta.env.DEV
   ? "https://n8n.sistemavieira.com.br/webhook"
-  : "";
+  : "/webhook";
 
 export const N8N_NEW_CONN_URL = import.meta.env.DEV
   ? "https://n8n.sistemavieira.com.br/webhook/api/nova-conexao"
-  : "/api/nova-conexao";
+  : "/webhook/api/nova-conexao";
 
 const DEPARTAMENTO_API = "https://api.zapresponder.com.br/api/departamento/all";
 const DEPARTAMENTO_TOKEN =
