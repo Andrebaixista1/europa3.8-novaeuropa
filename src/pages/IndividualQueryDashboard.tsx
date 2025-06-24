@@ -133,6 +133,10 @@ const IndividualQueryDashboard: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      toast.error("Usuário não autenticado. Faça login novamente.");
+      return;
+    }
 
     if (isEnabled && accountLimits?.available_limit !== undefined && accountLimits.available_limit <= 0) {
       toast.error("Não foi possível realizar a consulta online por falta de saldo disponível. \n\nPor favor, utilize a consulta off-line ou solicite saldo adicional à equipe de Planejamento ou ao seu Gerente Expande.");
@@ -176,8 +180,14 @@ const IndividualQueryDashboard: React.FC = () => {
       });
       const json = await res.json();
       setPesquisa(json.pesquisa || []);
+      if (json.pesquisa && json.pesquisa.length > 0) {
+        toast.success("Consulta realizada com sucesso!");
+      } else {
+        toast.error("Nenhum resultado encontrado para a consulta.");
+      }
     } catch (err) {
       console.error(err);
+      toast.error("Erro ao realizar a consulta. Tente novamente.");
     } finally {
       setIsSearching(false);
       // **recarrega** os limites (Disponível e Consultas) após a pesquisa
