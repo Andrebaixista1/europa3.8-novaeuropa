@@ -249,21 +249,29 @@ const Landing: React.FC = () => {
               title={
                 <>
                   Consulta em Lote{" "}
-                  <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
-                    Beta
+                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded">
+                    Bloqueada
                   </span>
                 </>
               }
               description="Faça consultas em lote para múltiplos cadastros de uma só vez."
               onClick={handleBatchQuery}
-              disabled={false}
+              disabled={true}
             />
 
             <QueryOption
               icon={<Search size={32} className="text-white" />}
-              title="Consulta Individual"
+              title={
+                <>
+                  Consulta Individual{" "}
+                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded">
+                    Bloqueada
+                  </span>
+                </>
+              }
               description="Pesquise informações específicas com precisão e resultados detalhados."
               onClick={handleIndividualQuery}
+              disabled={true}
             />
 
             <QueryOption
