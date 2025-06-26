@@ -256,7 +256,9 @@ const Landing: React.FC = () => {
               }
               description="Faça consultas em lote para múltiplos cadastros de uma só vez."
               onClick={handleBatchQuery}
-              disabled={true}
+              disabled={
+                !(isAuthenticated && user?.hierarquia === 1)
+              }
             />
 
             <QueryOption
@@ -271,7 +273,9 @@ const Landing: React.FC = () => {
               }
               description="Pesquise informações específicas com precisão e resultados detalhados."
               onClick={handleIndividualQuery}
-              disabled={true}
+              disabled={
+                !(isAuthenticated && user?.hierarquia === 1)
+              }
             />
 
             <QueryOption

@@ -15,7 +15,7 @@ import IndividualQueryDashboard from "./pages/IndividualQueryDashboard";
 import CreateLogins from "./pages/CreateLogins";
 import UserRecharge from "./pages/UserRecharge"; 
 import LuaAIChatPage from "./pages/LuaAIChatPage"
-import ConsultaFGTS from "./pages/ConsultaFGST";
+import ConsultaFGTS from "./pages/ConsultaFGTS";
 import ConexaoWhats from "./pages/ConexaoWhats";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
