@@ -17,6 +17,7 @@ interface AuthContextType {
 interface User {
   id: number;
   username: string;
+  hierarquia: number;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -72,7 +73,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       const data = await response.json();
       console.log('[AuthContext] login response data:', data);
-      const userData: User = { id: data.id, username: data.login };
+      const userData: User = { id: data.id, username: data.login, hierarquia: data.hierarquia };
       setUser(userData);
       localStorage.setItem('europa_user', JSON.stringify(userData));
       setIsLoading(false);
