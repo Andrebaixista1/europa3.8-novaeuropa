@@ -227,11 +227,12 @@ const IndividualQueryDashboard: React.FC = () => {
           } else {
             setAguardandoResposta(false);
             setConsultaIniciada(false);
-            setMensagemErro("Cliente não encontrado");
+            setMensagemErro("Benefício bloqueado durante o processo de concessão");
             setPesquisa(null);
             setCpf("");
             setNb("");
-            toast.error("Cliente não encontrado");
+            toast.error("Benefício bloqueado durante o processo de concessão");
+            await fetchAccountLimits();
           }
         }
       } catch (err) {
@@ -323,8 +324,11 @@ const IndividualQueryDashboard: React.FC = () => {
               Consulta Individual
             </h2>
             {consultaIniciada && aguardandoResposta ? (
-              <div className="text-center text-lg text-primary-600 font-semibold py-8">
-                Consulta Iniciada. Aguarde a resposta...
+              <div className="flex flex-col items-center justify-center py-8">
+                <LoadingSpinner size="lg" />
+                <span className="mt-4 text-lg text-primary-600 font-semibold">
+                  Carregando...
+                </span>
               </div>
             ) : (
               <>
