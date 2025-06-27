@@ -6,13 +6,14 @@ import {
   DollarSign,
   Activity,
   User as UserIcon,
+  Clipboard,
+  Check,
 } from "lucide-react";
 import InputMask from "react-input-mask";
 import DashboardHeader from "../components/DashboardHeader";
 import Button from "../components/Button";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
-import { Clipboard } from "lucide-react";
 import {
   translatePensao,
   translateTipoBloqueio,
@@ -77,6 +78,14 @@ const IndividualQueryDashboard: React.FC = () => {
     null
   );
   const [isLoadingLimits, setIsLoadingLimits] = useState(false);
+
+  const [consultaIniciada, setConsultaIniciada] = useState(false);
+  const [aguardandoResposta, setAguardandoResposta] = useState(false);
+  const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
+
+  const [mensagemErro, setMensagemErro] = useState<string | null>(null);
+
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // no topo do seu componente, antes dos useEffect e handleSubmit:
   const fetchAccountLimits = async () => {
@@ -143,10 +152,6 @@ const IndividualQueryDashboard: React.FC = () => {
       return;
     }
 
-    
-
-    
-
     // validações...
     const newErr: FormErrors = {};
     if (!validateCPF(cpf)) newErr.cpf = "CPF inválido";
@@ -159,9 +164,11 @@ const IndividualQueryDashboard: React.FC = () => {
 
     setIsSearching(true);
     setPesquisa(null);
+    setConsultaIniciada(false);
+    setAguardandoResposta(false);
 
     const base = `${API_BASE}/webhook/api`;
-    const url = isEnabled ? `${base}/consulta` : `${base}/consultaoff`;
+    const url = isEnabled ? `${base}/consulta2` : `${base}/consultaoff`;
     const payload: any = {
       id: user.id,
       cpf: cpf.replace(/[^\d]/g, ""),
@@ -178,21 +185,76 @@ const IndividualQueryDashboard: React.FC = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const json = await res.json();
-      setPesquisa(json.pesquisa || []);
-      if (json.pesquisa && json.pesquisa.length > 0) {
-        toast.success("Consulta realizada com sucesso!");
-      } else {
-        toast.error("Nenhum resultado encontrado para a consulta.");
-      }
+      // Não processa resposta, apenas inicia consulta
+      setConsultaIniciada(true);
+      setAguardandoResposta(true);
+      toast.info("Consulta Iniciada. Aguarde a resposta.");
+      // Inicia polling para buscar resposta
+      iniciarPollingResposta(user.id, payload.cpf, payload.nb);
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao realizar a consulta. Tente novamente.");
+      toast.error("Erro ao iniciar a consulta. Tente novamente.");
     } finally {
       setIsSearching(false);
-      // **recarrega** os limites (Disponível e Consultas) após a pesquisa
       await fetchAccountLimits();
     }
+  };
+
+  // Função para buscar resposta periodicamente
+  const iniciarPollingResposta = (userId: number, cpf: string, nb: string) => {
+    if (pollingIntervalId) {
+      clearInterval(pollingIntervalId);
+    }
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/webhook/api/resposta`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: userId, cpf, nb }),
+        });
+        const json = await res.json();
+        const resultado = Array.isArray(json) ? json : (json.pesquisa || []);
+        if (resultado.length > 0) {
+          clearInterval(interval);
+          setPollingIntervalId(null);
+          if (resultado[0].nome && resultado[0].nome.trim() !== "") {
+            setPesquisa(resultado);
+            setAguardandoResposta(false);
+            setConsultaIniciada(false);
+            setMensagemErro(null);
+            toast.success("Consulta realizada com sucesso!");
+            await fetchAccountLimits();
+          } else {
+            setAguardandoResposta(false);
+            setConsultaIniciada(false);
+            setMensagemErro("Cliente não encontrado");
+            setPesquisa(null);
+            setCpf("");
+            setNb("");
+            toast.error("Cliente não encontrado");
+          }
+        }
+      } catch (err) {
+        // Não faz nada, apenas continua tentando
+      }
+    }, 3000); // 3 segundos
+    setPollingIntervalId(interval);
+  };
+
+  // Limpa polling ao desmontar
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalId) {
+        clearInterval(pollingIntervalId);
+      }
+    };
+  }, [pollingIntervalId]);
+
+  const handleCopy = (value: string, field: string) => {
+    navigator.clipboard.writeText(value);
+    setCopiedField(field);
+    toast.success("Copiado para área de transferência");
+    setTimeout(() => setCopiedField(null), 1500);
   };
 
   return (
@@ -260,84 +322,97 @@ const IndividualQueryDashboard: React.FC = () => {
             <h2 className="text-2xl font-semibold text-center mb-8">
               Consulta Individual
             </h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label
-                  htmlFor="cpf"
-                  className="block text-sm font-medium text-neutral-700 mb-1"
-                >
-                  CPF <span className="text-error-500">*</span>
-                </label>
-                <InputMask
-                  id="cpf"
-                  mask="999.999.999-99"
-                  value={cpf}
-                  onChange={(e) => setCpf(e.target.value)}
-                  className={`europa-input ${
-                    errors.cpf ? "border-error-500" : ""
-                  }`}
-                  placeholder="000.000.000-00"
-                />
-                {errors.cpf && (
-                  <p className="mt-1 text-sm text-error-500">{errors.cpf}</p>
-                )}
+            {consultaIniciada && aguardandoResposta ? (
+              <div className="text-center text-lg text-primary-600 font-semibold py-8">
+                Consulta Iniciada. Aguarde a resposta...
               </div>
-              <div>
-                <label
-                  htmlFor="nb"
-                  className="block text-sm font-medium text-neutral-700 mb-1"
-                >
-                  Número do Benefício <span className="text-error-500">*</span>
-                </label>
-                <InputMask
-                  id="nb"
-                  mask="999.999.999-9"
-                  value={nb}
-                  onChange={(e) => setNb(e.target.value)}
-                  className={`europa-input ${
-                    errors.nb ? "border-error-500" : ""
-                  }`}
-                  placeholder="000.000.000-0"
-                />
-                {errors.nb && (
-                  <p className="mt-1 text-sm text-error-500">{errors.nb}</p>
+            ) : (
+              <>
+                {mensagemErro && (
+                  <div className="text-center text-red-600 font-semibold mb-4">
+                    {mensagemErro}
+                  </div>
                 )}
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-sm font-medium text-neutral-700">
-                  Consulta Avançada
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsEnabled(!isEnabled)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div>
+                    <label
+                      htmlFor="cpf"
+                      className="block text-sm font-medium text-neutral-700 mb-1"
+                    >
+                      CPF <span className="text-error-500">*</span>
+                    </label>
+                    <InputMask
+                      id="cpf"
+                      mask="999.999.999-99"
+                      value={cpf}
+                      onChange={(e) => setCpf(e.target.value)}
+                      className={`europa-input ${
+                        errors.cpf ? "border-error-500" : ""
+                      }`}
+                      placeholder="000.000.000-00"
+                    />
+                    {errors.cpf && (
+                      <p className="mt-1 text-sm text-error-500">{errors.cpf}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="nb"
+                      className="block text-sm font-medium text-neutral-700 mb-1"
+                    >
+                      Número do Benefício <span className="text-error-500">*</span>
+                    </label>
+                    <InputMask
+                      id="nb"
+                      mask="999.999.999-9"
+                      value={nb}
+                      onChange={(e) => setNb(e.target.value)}
+                      className={`europa-input ${
+                        errors.nb ? "border-error-500" : ""
+                      }`}
+                      placeholder="000.000.000-0"
+                    />
+                    {errors.nb && (
+                      <p className="mt-1 text-sm text-error-500">{errors.nb}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-sm font-medium text-neutral-700">
+                      Consulta Avançada
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsEnabled(!isEnabled)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
     focus:ring-2 focus:ring-primary-600 ${
       isEnabled ? "bg-success-500" : "bg-neutral-300"
     }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform bg-white rounded-full transition-transform ${
-                      isEnabled ? "translate-x-6" : "translate-x-1"
-                    }`}
-                  />
-                </button>
-              </div>
-              <Button
-                type="submit"
-                variant="primary"
-                fullWidth
-                disabled={isSearching}
-                icon={
-                  isSearching ? (
-                    <LoadingSpinner size="sm" />
-                  ) : (
-                    <Search size={18} />
-                  )
-                }
-              >
-                {isSearching ? "Pesquisando..." : "Pesquisar"}
-              </Button>
-            </form>
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform bg-white rounded-full transition-transform ${
+                          isEnabled ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    fullWidth
+                    disabled={isSearching}
+                    icon={
+                      isSearching ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        <Search size={18} />
+                      )
+                    }
+                  >
+                    {isSearching ? "Pesquisando..." : "Pesquisar"}
+                  </Button>
+                </form>
+              </>
+            )}
           </motion.div>
 
           {/* RESULTADOS */}
@@ -353,9 +428,9 @@ const IndividualQueryDashboard: React.FC = () => {
                 </h3>
                 <span className="text-sm text-neutral-500">
                   Última Atualização:{" "}
-                  {new Date(pesquisa[0].data_hora_registro).toLocaleDateString(
-                    "pt-BR"
-                  )}
+                  {new Date(pesquisa[0].data_hora_registro).toLocaleDateString("pt-BR")}
+                  {" às "}
+                  {new Date(pesquisa[0].data_hora_registro).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
 
@@ -365,11 +440,11 @@ const IndividualQueryDashboard: React.FC = () => {
                   <h4 className="font-semibold mb-4">Informações Básicas</h4>
                   <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                     {[
-                      ["Benefício", pesquisa[0].numero_beneficio],
-                      ["CPF", pesquisa[0].numero_documento],
+                      ["Benefício", pesquisa[0].numero_beneficio, "beneficio"],
+                      ["CPF", pesquisa[0].numero_documento, "cpf"],
                       ["Nome", pesquisa[0].nome],
                       ["Estado", pesquisa[0].estado],
-                    ].map(([lab, val]) => (
+                    ].map(([lab, val, field]) => (
                       <div key={lab}>
                         <dt className="text-sm text-neutral-500">{lab}:</dt>
                         <dd className="flex items-center font-medium">
@@ -377,13 +452,14 @@ const IndividualQueryDashboard: React.FC = () => {
                           {(lab === "Benefício" || lab === "CPF") && val && (
                             <button
                               type="button"
-                              onClick={() => navigator.clipboard.writeText(val)}
+                              onClick={() => handleCopy(val as string, field as string)}
                               className="ml-2 p-1 rounded hover:bg-neutral-100"
                             >
-                              <Clipboard
-                                size={16}
-                                className="text-neutral-400 hover:text-neutral-600"
-                              />
+                              {copiedField === field ? (
+                                <Check size={16} className="text-green-600" />
+                              ) : (
+                                <Clipboard size={16} className="text-neutral-400 hover:text-neutral-600" />
+                              )}
                             </button>
                           )}
                         </dd>
