@@ -266,16 +266,11 @@ const Landing: React.FC = () => {
               title={
                 <>
                   Consulta Individual{" "}
-                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded">
-                    Bloqueada
-                  </span>
                 </>
               }
               description="Pesquise informações específicas com precisão e resultados detalhados."
               onClick={handleIndividualQuery}
-              disabled={
-                !(isAuthenticated && user?.hierarquia === 1)
-              }
+              disabled={false}
             />
 
             <QueryOption
