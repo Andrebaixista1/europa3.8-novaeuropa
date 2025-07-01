@@ -217,7 +217,7 @@ const IndividualQueryDashboard: React.FC = () => {
         if (resultado.length > 0) {
           clearInterval(interval);
           setPollingIntervalId(null);
-          if (resultado[0].nome && resultado[0].nome.trim() !== "") {
+          if (resultado[0]?.nome && resultado[0].nome.trim() !== "") {
             setPesquisa(resultado);
             setAguardandoResposta(false);
             setConsultaIniciada(false);
@@ -227,11 +227,14 @@ const IndividualQueryDashboard: React.FC = () => {
           } else {
             setAguardandoResposta(false);
             setConsultaIniciada(false);
-            setMensagemErro("Benefício bloqueado durante o processo de concessão");
+            const mensagem = (resultado[0] && typeof resultado[0].status_api === 'string' && resultado[0].status_api.trim() !== "")
+              ? resultado[0].status_api
+              : "Beneficiário não encontrado";
+            setMensagemErro(mensagem);
             setPesquisa(null);
             setCpf("");
             setNb("");
-            toast.error("Benefício bloqueado durante o processo de concessão");
+            toast.error(mensagem);
             await fetchAccountLimits();
           }
         }
