@@ -86,6 +86,8 @@ const IndividualQueryDashboard: React.FC = () => {
 
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
+
   // no topo do seu componente, antes dos useEffect e handleSubmit:
   const fetchAccountLimits = async () => {
     if (!user) return;
@@ -139,6 +141,38 @@ const IndividualQueryDashboard: React.FC = () => {
   const validateCPF = (v: string) => v.replace(/[^\d]/g, "").length === 11;
   const validateNB = (v: string) => v.replace(/[^\d]/g, "").length === 10;
 
+  const startRespostaPolling = (userId: number, cpf: string, nb: string) => {
+    if (pollingIntervalId) {
+      clearInterval(pollingIntervalId);
+      setPollingIntervalId(null);
+    }
+    const interval = setInterval(async () => {
+      try {
+        const resposta = await fetch(`${API_BASE}/webhook/api/resposta`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: userId, cpf, nb }),
+        });
+        const json = await resposta.json();
+        const resultado = Array.isArray(json) ? json : (json.pesquisa || []);
+        if (resultado.length > 0 && resultado[0]?.nome && resultado[0].nome.trim() !== "") {
+          clearInterval(interval);
+          setPollingIntervalId(null);
+          setPesquisa(resultado);
+          setAguardandoResposta(false);
+          setConsultaIniciada(false);
+          setMensagemErro(null);
+          toast.success("Consulta realizada com sucesso!");
+          await fetchAccountLimits();
+        }
+        // Se vier vazio, não faz nada e repete o polling
+      } catch (err) {
+        // Em caso de erro, apenas continua tentando
+      }
+    }, 3000);
+    setPollingIntervalId(interval);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
@@ -189,34 +223,7 @@ const IndividualQueryDashboard: React.FC = () => {
       setAguardandoResposta(true);
       toast.info("Consulta Iniciada. Aguarde a resposta.");
 
-      // Chamada única ao endpoint /api/resposta
-      const resposta = await fetch(`${API_BASE}/webhook/api/resposta`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: user.id, cpf: payload.cpf, nb: payload.nb }),
-      });
-      const json = await resposta.json();
-      const resultado = Array.isArray(json) ? json : (json.pesquisa || []);
-      if (resultado.length > 0 && resultado[0]?.nome && resultado[0].nome.trim() !== "") {
-        setPesquisa(resultado);
-        setAguardandoResposta(false);
-        setConsultaIniciada(false);
-        setMensagemErro(null);
-        toast.success("Consulta realizada com sucesso!");
-        await fetchAccountLimits();
-      } else {
-        setAguardandoResposta(false);
-        setConsultaIniciada(false);
-        const mensagem = (resultado[0] && typeof resultado[0].status_api === 'string' && resultado[0].status_api.trim() !== "")
-          ? resultado[0].status_api
-          : "Beneficiário não encontrado";
-        setMensagemErro(mensagem);
-        setPesquisa(null);
-        setCpf("");
-        setNb("");
-        toast.error(mensagem);
-        await fetchAccountLimits();
-      }
+      startRespostaPolling(user.id, payload.cpf, payload.nb);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao iniciar a consulta. Tente novamente.");
@@ -232,6 +239,14 @@ const IndividualQueryDashboard: React.FC = () => {
     toast.success("Copiado para área de transferência");
     setTimeout(() => setCopiedField(null), 1500);
   };
+
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalId) {
+        clearInterval(pollingIntervalId);
+      }
+    };
+  }, [pollingIntervalId]);
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
