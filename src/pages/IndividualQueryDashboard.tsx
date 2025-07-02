@@ -155,15 +155,29 @@ const IndividualQueryDashboard: React.FC = () => {
         });
         const json = await resposta.json();
         const resultado = Array.isArray(json) ? json : (json.pesquisa || []);
-        if (resultado.length > 0 && resultado[0]?.nome && resultado[0].nome.trim() !== "") {
-          clearInterval(interval);
-          setPollingIntervalId(null);
-          setPesquisa(resultado);
-          setAguardandoResposta(false);
-          setConsultaIniciada(false);
-          setMensagemErro(null);
-          toast.success("Consulta realizada com sucesso!");
-          await fetchAccountLimits();
+        if (resultado.length > 0) {
+          if (resultado[0]?.status_api && resultado[0].status_api !== null) {
+            clearInterval(interval);
+            setPollingIntervalId(null);
+            setAguardandoResposta(false);
+            setConsultaIniciada(false);
+            setMensagemErro(resultado[0].status_api);
+            setPesquisa(null);
+            toast.error(resultado[0].status_api);
+            await fetchAccountLimits();
+            return;
+          }
+          if (resultado[0]?.nome && resultado[0].nome.trim() !== "") {
+            clearInterval(interval);
+            setPollingIntervalId(null);
+            setPesquisa(resultado);
+            setAguardandoResposta(false);
+            setConsultaIniciada(false);
+            setMensagemErro(null);
+            toast.success("Consulta realizada com sucesso!");
+            await fetchAccountLimits();
+            return;
+          }
         }
         // Se vier vazio, não faz nada e repete o polling
       } catch (err) {
