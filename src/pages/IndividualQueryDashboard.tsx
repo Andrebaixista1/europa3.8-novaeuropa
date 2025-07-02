@@ -232,6 +232,9 @@ const IndividualQueryDashboard: React.FC = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
+
+      
       // Não processa resposta, apenas inicia consulta
       setConsultaIniciada(true);
       setAguardandoResposta(true);
