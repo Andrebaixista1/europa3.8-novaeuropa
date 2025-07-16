@@ -222,11 +222,19 @@ const Landing: React.FC = () => {
           >
             <QueryOption
               icon={<Brain size={32} className="text-white" />}
+              // title={
+              //   <>
+              //     Lua AI (Inteligência Artificial) <br></br>
+              //     <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
+              //       Beta
+              //     </span>
+              //   </>
+              // }
               title={
                 <>
                   Lua AI (Inteligência Artificial) <br></br>
                   <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
-                    Beta
+                    Em Reforma
                   </span>
                 </>
               }
@@ -242,7 +250,7 @@ const Landing: React.FC = () => {
                 />
               }
               onClick={handleLuaAiQuery}
-              disabled={false}
+              disabled={true}
             />
             <QueryOption
               icon={<Database size={32} className="text-white" />}
