@@ -103,80 +103,90 @@ const Selene: React.FC = () => {
     onPrev: () => void;
     onNext: () => void;
   }) => (
-    <div
-      className="bg-white border border-[#E5EAF2] rounded-2xl shadow-lg max-w-xs w-full mx-auto flex flex-col items-center px-6 py-7 mb-5 transition-all duration-200"
-      tabIndex={0}
-      aria-label={`Card de proposta ${tipo}`}
-    >
-      <span className="block text-xs text-[#00A8FF] uppercase font-bold mb-2 tracking-widest">
-        {tipo}
+   <div
+  className="bg-white border border-[#E5EAF2] rounded-2xl shadow-lg max-w-md w-full mx-auto flex flex-col items-center px-10 py-10 mb-5 transition-all duration-200 min-h-[370px]"
+  tabIndex={0}
+  aria-label={`Card de proposta ${tipo}`}
+>
+  <span className="block text-xs text-[#00A8FF] uppercase font-bold mb-4 tracking-widest text-center w-full truncate">
+    {tipo}
+  </span>
+  <div className="w-full flex flex-col gap-2 mb-2">
+    <div className="flex flex-col items-start w-full">
+      <span className="text-neutral-400 text-sm">Nome:</span>
+      <span className="text-neutral-700 font-medium break-words w-full text-left whitespace-pre-line">
+        {proposta.cliente_nome || "-"}
       </span>
-      <div className="w-full flex flex-col gap-1 mb-2">
-        <div className="flex justify-between">
-          <span className="text-neutral-400 text-sm">Nome:</span>
-          <span className="text-neutral-700 font-medium">
-            {proposta.cliente_nome || "-"}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-neutral-400 text-sm">Valor:</span>
-          <span className="text-[#00A8FF] font-bold">
-            {proposta.valor_referencia || "-"}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-neutral-400 text-sm">Parcela:</span>
-          <span className="text-neutral-700">
-            {proposta.valor_parcela || "-"}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-neutral-400 text-sm">Status:</span>
-          <span
-            className={
-              "font-bold " +
-              (proposta.status_nome === "Aprovada"
-                ? "text-green-500"
-                : proposta.status_nome === "Pendente"
-                ? "text-yellow-500"
-                : "text-red-500")
-            }
-          >
-            {proposta.status_nome || "-"}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-neutral-400 text-sm">ID Proposta:</span>
-          <span className="text-neutral-700">
-            {proposta.id_proposta_banco || "-"}
-          </span>
-        </div>
-      </div>
-      {total > 1 && (
-        <div className="flex gap-2 items-center mt-3">
-          <button
-            onClick={onPrev}
-            className="bg-[#EDF5FC] hover:bg-[#00A8FF] text-[#00A8FF] hover:text-white px-4 py-2 rounded-full font-bold transition"
-            aria-label="Anterior"
-            type="button"
-          >
-            ←
-          </button>
-          <span className="text-xs text-neutral-400">
-            {idx + 1} de {total}
-          </span>
-          <button
-            onClick={onNext}
-            className="bg-[#EDF5FC] hover:bg-[#00A8FF] text-[#00A8FF] hover:text-white px-4 py-2 rounded-full font-bold transition"
-            aria-label="Próximo"
-            type="button"
-          >
-            →
-          </button>
-        </div>
-      )}
     </div>
+    <div className="flex justify-between w-full">
+      <span className="text-neutral-400 text-sm">Valor:</span>
+      <span className="text-[#00A8FF] font-bold text-right truncate max-w-[140px] text-lg">
+  {formatarMoeda(proposta.valor_referencia)}
+</span>
+    </div>
+    <div className="flex justify-between w-full">
+      <span className="text-neutral-400 text-sm">Parcela:</span>
+      <span className="text-neutral-700 text-right truncate max-w-[140px] text-base">
+  {formatarMoeda(proposta.valor_parcela)}
+     </span>
+    </div>
+    <div className="flex justify-between w-full">
+      <span className="text-neutral-400 text-sm">Status:</span>
+      <span
+        className={
+          "font-bold text-right truncate max-w-[140px] text-base " +
+          (proposta.status_nome === "Aprovada" || proposta.status_nome === "Pago"
+            ? "text-green-500"
+            : proposta.status_nome === "Pendente"
+            ? "text-yellow-500"
+            : "text-red-500")
+        }
+      >
+        {proposta.status_nome || "-"}
+      </span>
+    </div>
+    <div className="flex flex-col items-start w-full">
+      <span className="text-neutral-400 text-sm">ID Proposta:</span>
+      <span className="text-neutral-700 break-words w-full truncate max-w-[140px]">
+        {proposta.id_proposta_banco || "-"}
+      </span>
+    </div>
+  </div>
+  {/* Navegação permanece igual */}
+  {total > 1 && (
+    <div className="flex gap-2 items-center mt-5">
+      <button
+        onClick={onPrev}
+        className="bg-[#EDF5FC] hover:bg-[#00A8FF] text-[#00A8FF] hover:text-white px-4 py-2 rounded-full font-bold transition"
+        aria-label="Anterior"
+        type="button"
+      >
+        ←
+      </button>
+      <span className="text-xs text-neutral-400">
+        {idx + 1} de {total}
+      </span>
+      <button
+        onClick={onNext}
+        className="bg-[#EDF5FC] hover:bg-[#00A8FF] text-[#00A8FF] hover:text-white px-4 py-2 rounded-full font-bold transition"
+        aria-label="Próximo"
+        type="button"
+      >
+        →
+      </button>
+    </div>
+  )}
+</div>
+
+
   );
+  function formatarMoeda (valor: string | number | undefined) {
+  if (!valor) return "-";
+  const numero = Number(valor);
+  if (isNaN(numero)) return valor;
+  return numero.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 
   return (
     <div className="min-h-screen w-full bg-[#F5F7FB] flex flex-col">
