@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-blue: #007AFF;
+  --secondary-blue: #00C7FF;
+}
+
+body {
+  @apply font-sans text-neutral-800 antialiased;
+  background-color: #f5f5f7;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  @apply font-semibold leading-tight;
+}
+
+p {
+  @apply leading-relaxed;
+}
+
+.button-hover {
+  @apply transition-transform duration-200 hover:scale-105 active:scale-95;
+}
+
+.page-transition {
+  @apply transition-opacity duration-300;
+}
+
+.europa-gradient {
+  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+}
+
+.europa-shadow {
+  box-shadow: 0 4px 20px rgba(0, 122, 255, 0.2);
+}
+
+.europa-card {
+  @apply bg-white rounded-xl p-6 shadow-apple;
+}
+
+.europa-input {
+  @apply w-full px-4 py-3 rounded-lg border border-neutral-200 focus:border-primary-600 focus:outline-none transition duration-150;
+}
+
+.europa-button {
+  @apply px-6 py-3 rounded-lg font-medium transition-all duration-200 transform;
+}
+
+.europa-primary-button {
+  @apply europa-button bg-blue-gradient text-white shadow-apple hover:shadow-apple-hover button-hover;
+}
+
+.europa-secondary-button {
+  @apply europa-button bg-white text-primary-600 shadow-apple hover:shadow-apple-hover button-hover;
+}
+
+.dashboard-header {
+  @apply bg-white px-6 py-4 shadow-sm flex items-center justify-between;
+}

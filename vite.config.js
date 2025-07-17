@@ -1,0 +1,18 @@
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      '/webhook': {
+        target: 'http://177.153.62.236:5679',
+        changeOrigin: true,
+        secure: false,
+        logLevel: 'debug',
+        // --> aqui a gente faz '/webhook/...' virar '//webhook/...' 
+        rewrite: (path) => path.replace(/^\/webhook/, '//webhook'),
+      },
+    },
+  },
+})

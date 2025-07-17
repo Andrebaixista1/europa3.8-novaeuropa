@@ -1,0 +1,8 @@
+{
+  "rewrites":[
+    { "source":"/webhook/:path*",
+      "destination":"https://n8n.sistemavieira.com.br/webhook/:path*" },
+    { "source": "/(.*)",
+      "destination": "/" }
+  ]
+}
