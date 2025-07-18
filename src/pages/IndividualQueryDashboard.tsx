@@ -88,6 +88,15 @@ const IndividualQueryDashboard: React.FC = () => {
 
   const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
 
+  // Preencher automaticamente CPF e NB vindos da URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const cpfParam = params.get("cpf");
+    const nbParam = params.get("nb");
+    if (cpfParam) setCpf(cpfParam);
+    if (nbParam) setNb(nbParam);
+  }, []);
+
   // no topo do seu componente, antes dos useEffect e handleSubmit:
   const fetchAccountLimits = async () => {
     if (!user) return;

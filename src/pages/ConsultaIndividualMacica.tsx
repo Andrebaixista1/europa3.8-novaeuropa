@@ -11,6 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   MoveVertical,
+  Clipboard,
+  Check,
 } from "lucide-react";
 import InputMask from "react-input-mask";
 import DashboardHeader from "../components/DashboardHeader";
@@ -77,6 +79,13 @@ const ConsultaFGTS: React.FC = () => {
   // Mensagem de erro temporária
   const [showRedAlert, setShowRedAlert] = useState(false);
   const [redAlertMsg, setRedAlertMsg] = useState("");
+
+  // Estado para modal IN100
+  const [showIN100Modal, setShowIN100Modal] = useState(false);
+
+  // Estados para animação do botão de copiar
+  const [copiandoCPF, setCopiandoCPF] = useState<'idle' | 'loading' | 'done'>("idle");
+  const [copiandoNB, setCopiandoNB] = useState<'idle' | 'loading' | 'done'>("idle");
 
   const fetchUserBalance = async () => {
     if (!user) return;
@@ -209,7 +218,7 @@ const ConsultaFGTS: React.FC = () => {
         toast.success("Consulta realizada com sucesso!", { autoClose: 3000 });
         await fetchUserBalance();
       } else {
-        setRedAlertMsg('Cliente não existe ou não foi encontrado.');
+        setRedAlertMsg('Cliente não existe/não foi encontrado.');
         setShowRedAlert(true);
         setErroClienteMostrado(true);
         setResultData(null);
@@ -266,6 +275,15 @@ const ConsultaFGTS: React.FC = () => {
   useEffect(() => {
     setErroClienteMostrado(false);
   }, [isSearching]);
+
+  // Função para abrir nova aba com os dados preenchidos
+  function handleIN100Consultar() {
+    const row = resultData && resultData[contratoIdx];
+    const cpf = row ? row["nu_cpf_tratado"] : "";
+    const nb = row ? row["nb_tratado"] : "";
+    const url = `/dashboard/individual?cpf=${encodeURIComponent(cpf)}&nb=${encodeURIComponent(nb)}`;
+    window.open(url, '_blank');
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
@@ -404,7 +422,23 @@ const ConsultaFGTS: React.FC = () => {
                       transition={{ duration: 0.2 }}
                     >
                   {/* Informações Básicas */}
-                  <div className="bg-white border border-neutral-200 rounded-xl shadow p-6">
+                  <div className="bg-white border border-neutral-200 rounded-xl shadow p-6 relative">
+                    <div className="absolute top-4 right-4 flex gap-2">
+                      <button type="button" className="px-3 py-1 rounded bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold shadow transition-colors" onClick={() => {
+                        const row = resultData && resultData[contratoIdx];
+                        const cpf = row ? row["nu_cpf_tratado"] : "";
+                        const nb = row ? row["nb_tratado"] : "";
+                        const url = `/dashboard/individual?cpf=${encodeURIComponent(cpf)}&nb=${encodeURIComponent(nb)}`;
+                        window.open(url, '_blank');
+                      }}>IN100</button>
+                      <button type="button" className="px-3 py-1 rounded bg-green-500 hover:bg-green-600 text-white text-xs font-semibold shadow transition-colors" onClick={() => {
+                        const row = resultData && resultData[contratoIdx];
+                        const nome = row ? row["nome segurado"] : "";
+                        const cpf = row ? row["nu_cpf_tratado"] : "";
+                        const url = `/dashboard/consulta-fgts?nome=${encodeURIComponent(nome)}&cpf=${encodeURIComponent(cpf)}`;
+                        window.open(url, '_blank');
+                      }}>FGTS</button>
+                    </div>
                     <h4 className="font-semibold mb-4">Informações Básicas</h4>
                     <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
                       <div>
@@ -412,15 +446,47 @@ const ConsultaFGTS: React.FC = () => {
                         <dd className="font-medium">{row["nome segurado"] || "-"}</dd>
                       </div>
                       {row["nb_tratado"] > 0 && (
-                        <div>
+                        <div className="flex items-center gap-2">
                           <dt className="text-sm text-neutral-500">NB:</dt>
-                          <dd className="font-medium">{row["nb_tratado"]}</dd>
+                          <div className="flex flex-row items-center">
+                            <dd className="font-medium mb-0">{row["nb_tratado"].toString().replace(/(\d{3})(\d{3})(\d{3})(\d{1})/, "$1.$2.$3-$4")}</dd>
+                            <button type="button" className="ml-2 p-1 rounded hover:bg-neutral-100 flex items-center" style={{lineHeight:0}} onClick={async () => {
+                              if (copiandoNB !== 'idle') return;
+                              setCopiandoNB('loading');
+                              navigator.clipboard.writeText(row["nb_tratado"].toString());
+                              await new Promise(r => setTimeout(r, 100));
+                              setCopiandoNB('done');
+                              await new Promise(r => setTimeout(r, 200));
+                              setCopiandoNB('idle');
+                              toast.success("NB copiado!");
+                            }}>
+                              {copiandoNB === 'idle' && <Clipboard size={16} className="text-neutral-400 hover:text-neutral-600" />}
+                              {copiandoNB === 'loading' && <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />}
+                              {copiandoNB === 'done' && <Check size={16} className="text-green-600" />}
+                            </button>
+                          </div>
                         </div>
                       )}
                       {row["nu_cpf_tratado"] > 0 && (
-                        <div>
+                        <div className="flex items-center gap-2">
                           <dt className="text-sm text-neutral-500">CPF:</dt>
-                          <dd className="font-medium">{row["nu_cpf_tratado"]}</dd>
+                          <div className="flex flex-row items-center">
+                            <dd className="font-medium mb-0">{row["nu_cpf_tratado"].toString().replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")}</dd>
+                            <button type="button" className="ml-2 p-1 rounded hover:bg-neutral-100 flex items-center" style={{lineHeight:0}} onClick={async () => {
+                              if (copiandoCPF !== 'idle') return;
+                              setCopiandoCPF('loading');
+                              navigator.clipboard.writeText(row["nu_cpf_tratado"].toString());
+                              await new Promise(r => setTimeout(r, 100));
+                              setCopiandoCPF('done');
+                              await new Promise(r => setTimeout(r, 200));
+                              setCopiandoCPF('idle');
+                              toast.success("CPF copiado!");
+                            }}>
+                              {copiandoCPF === 'idle' && <Clipboard size={16} className="text-neutral-400 hover:text-neutral-600" />}
+                              {copiandoCPF === 'loading' && <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />}
+                              {copiandoCPF === 'done' && <Check size={16} className="text-green-600" />}
+                            </button>
+                          </div>
                         </div>
                       )}
                       <div>
@@ -597,15 +663,47 @@ const ConsultaFGTS: React.FC = () => {
                         <dd className="font-medium">{row["nome segurado"] || "-"}</dd>
                       </div>
                       {row["nb_tratado"] > 0 && (
-                        <div>
-                          <dt className="text-sm text-neutral-500">NB:</dt>
-                          <dd className="font-medium">{row["nb_tratado"]}</dd>
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <dt className="text-sm text-neutral-500">NB:</dt>
+                            <dd className="font-medium">{row["nb_tratado"].toString().replace(/(\d{3})(\d{3})(\d{3})(\d{1})/, "$1.$2.$3-$4")}</dd>
+                          </div>
+                          <button type="button" className="ml-1 p-1 rounded hover:bg-neutral-100" onClick={async () => {
+                            if (copiandoNB !== 'idle') return;
+                            setCopiandoNB('loading');
+                            navigator.clipboard.writeText(row["nb_tratado"].toString());
+                            await new Promise(r => setTimeout(r, 100));
+                            setCopiandoNB('done');
+                            await new Promise(r => setTimeout(r, 200));
+                            setCopiandoNB('idle');
+                            toast.success("NB copiado!");
+                          }}>
+                            {copiandoNB === 'idle' && <Clipboard size={16} className="text-neutral-400 hover:text-neutral-600" />}
+                            {copiandoNB === 'loading' && <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />}
+                            {copiandoNB === 'done' && <Check size={16} className="text-green-600" />}
+                          </button>
                         </div>
                       )}
                       {row["nu_cpf_tratado"] > 0 && (
-                        <div>
-                          <dt className="text-sm text-neutral-500">CPF:</dt>
-                          <dd className="font-medium">{row["nu_cpf_tratado"]}</dd>
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <dt className="text-sm text-neutral-500">CPF:</dt>
+                            <dd className="font-medium">{row["nu_cpf_tratado"].toString().replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")}</dd>
+                          </div>
+                          <button type="button" className="ml-1 p-1 rounded hover:bg-neutral-100" onClick={async () => {
+                            if (copiandoCPF !== 'idle') return;
+                            setCopiandoCPF('loading');
+                            navigator.clipboard.writeText(row["nu_cpf_tratado"].toString());
+                            await new Promise(r => setTimeout(r, 100));
+                            setCopiandoCPF('done');
+                            await new Promise(r => setTimeout(r, 200));
+                            setCopiandoCPF('idle');
+                            toast.success("CPF copiado!");
+                          }}>
+                            {copiandoCPF === 'idle' && <Clipboard size={16} className="text-neutral-400 hover:text-neutral-600" />}
+                            {copiandoCPF === 'loading' && <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />}
+                            {copiandoCPF === 'done' && <Check size={16} className="text-green-600" />}
+                          </button>
                         </div>
                       )}
                       <div>
@@ -744,6 +842,28 @@ const ConsultaFGTS: React.FC = () => {
           })()}
         </div>
       </div>
+      {/* Modal IN100 */}
+      {false && (
+        <AnimatePresence>
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <motion.div
+              className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Modal removido, não será exibido */}
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
+      )}
     </div>
   );
 };
