@@ -234,7 +234,7 @@ const Landing: React.FC = () => {
                 <>
                   Lua AI (Inteligência Artificial) <br></br>
                   <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
-                    Em Reforma
+                    Em Manutenção
                   </span>
                 </>
               }
@@ -295,7 +295,7 @@ const Landing: React.FC = () => {
               onClick={handleConsultaFGTS}
               disabled={false}
             />
-            <QueryOption
+            {/* <QueryOption
               icon={<Workflow size={32} className="text-white" />}
               title={
                 <>
@@ -326,7 +326,7 @@ const Landing: React.FC = () => {
               disabled={
                 !(isAuthenticated && user?.hierarquia === 1)
               }
-            />
+            /> */}
 
             <QueryOption
               icon={<UserPlus size={32} className="text-white" />}
