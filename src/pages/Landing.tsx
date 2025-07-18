@@ -12,6 +12,7 @@ import {
   PiggyBank,
   Workflow,
   LogOut,
+  Handshake 
 } from "lucide-react";
 import EuropaLogo from "../components/EuropaLogo";
 import Button from "../components/Button";
@@ -314,7 +315,7 @@ const Landing: React.FC = () => {
             /> */}
 
             <QueryOption
-              icon={<UserPlus size={32} className="text-white" />}
+              icon={<Handshake  size={32} className="text-white" />}
               title={
                 <>
                   Consulta Individual (Maciça){" "}
