@@ -269,7 +269,7 @@ const IndividualQueryDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
-      <DashboardHeader title="Consulta Individual" />
+      <DashboardHeader title="Consulta Individual (IN100)" />
       <div className="container mx-auto px-4 py-8 flex-1">
         <div className="max-w-4xl mx-auto grid gap-6">
           {/* CARDS DE SALDO */}
