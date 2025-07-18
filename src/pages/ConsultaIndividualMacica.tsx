@@ -392,24 +392,48 @@ const ConsultaFGTS: React.FC = () => {
                 <>
                   {/* Paginação geral no topo */}
                   {contratos.length > 1 && (
-                    <div className="flex justify-end items-center mb-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setContratoIdx(contratoIdx === 0 ? contratos.length - 1 : contratoIdx - 1)}
-                        className="p-2 rounded-full border border-neutral-300 hover:bg-neutral-100"
-                        aria-label="Anterior"
-                      >
-                        <ChevronLeft size={20} />
-                      </button>
-                      <span className="text-sm text-neutral-700 font-medium min-w-[48px] text-center">{contratoIdx + 1} de {contratos.length}</span>
-                      <button
-                        type="button"
-                        onClick={() => setContratoIdx(contratoIdx === contratos.length - 1 ? 0 : contratoIdx + 1)}
-                        className="p-2 rounded-full border border-neutral-300 hover:bg-neutral-100"
-                        aria-label="Próximo"
-                      >
-                        <ChevronRight size={20} />
-                      </button>
+                    <div className="flex justify-between items-center mb-2 gap-2">
+                      {/* Botões IN100 e FGTS reposicionados */}
+                      <div className="flex gap-2">
+                        <button type="button" className="flex items-center gap-1 px-3 py-1 rounded-lg bg-white border border-blue-500 text-blue-600 font-semibold shadow-sm hover:bg-blue-50 transition-colors" onClick={() => {
+                          const row = resultData && resultData[contratoIdx];
+                          const cpf = row ? row["nu_cpf_tratado"] : "";
+                          const nb = row ? row["nb_tratado"] : "";
+                          const url = `/dashboard/individual?cpf=${encodeURIComponent(cpf)}&nb=${encodeURIComponent(nb)}`;
+                          window.open(url, '_blank');
+                        }}>
+                          <FileText size={16} className="mr-1" /> IN100
+                        </button>
+                        <button type="button" className="flex items-center gap-1 px-3 py-1 rounded-lg bg-white border border-green-500 text-green-600 font-semibold shadow-sm hover:bg-green-50 transition-colors" onClick={() => {
+                          const row = resultData && resultData[contratoIdx];
+                          const nome = row ? row["nome segurado"] : "";
+                          const cpf = row ? row["nu_cpf_tratado"] : "";
+                          const url = `/dashboard/consulta-fgts?nome=${encodeURIComponent(nome)}&cpf=${encodeURIComponent(cpf)}`;
+                          window.open(url, '_blank');
+                        }}>
+                          <DollarSign size={16} className="mr-1" /> FGTS
+                        </button>
+                      </div>
+                      {/* Paginação */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setContratoIdx(contratoIdx === 0 ? contratos.length - 1 : contratoIdx - 1)}
+                          className="p-2 rounded-full border border-neutral-300 hover:bg-neutral-100"
+                          aria-label="Anterior"
+                        >
+                          <ChevronLeft size={20} />
+                        </button>
+                        <span className="text-sm text-neutral-700 font-medium min-w-[48px] text-center">{contratoIdx + 1} de {contratos.length}</span>
+                        <button
+                          type="button"
+                          onClick={() => setContratoIdx(contratoIdx === contratos.length - 1 ? 0 : contratoIdx + 1)}
+                          className="p-2 rounded-full border border-neutral-300 hover:bg-neutral-100"
+                          aria-label="Próximo"
+                        >
+                          <ChevronRight size={20} />
+                        </button>
+                      </div>
                     </div>
                   )}
                   <AnimatePresence mode="wait">
@@ -423,22 +447,6 @@ const ConsultaFGTS: React.FC = () => {
                     >
                   {/* Informações Básicas */}
                   <div className="bg-white border border-neutral-200 rounded-xl shadow p-6 relative">
-                    <div className="absolute top-4 right-4 flex gap-2">
-                      <button type="button" className="px-3 py-1 rounded bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold shadow transition-colors" onClick={() => {
-                        const row = resultData && resultData[contratoIdx];
-                        const cpf = row ? row["nu_cpf_tratado"] : "";
-                        const nb = row ? row["nb_tratado"] : "";
-                        const url = `/dashboard/individual?cpf=${encodeURIComponent(cpf)}&nb=${encodeURIComponent(nb)}`;
-                        window.open(url, '_blank');
-                      }}>IN100</button>
-                      <button type="button" className="px-3 py-1 rounded bg-green-500 hover:bg-green-600 text-white text-xs font-semibold shadow transition-colors" onClick={() => {
-                        const row = resultData && resultData[contratoIdx];
-                        const nome = row ? row["nome segurado"] : "";
-                        const cpf = row ? row["nu_cpf_tratado"] : "";
-                        const url = `/dashboard/consulta-fgts?nome=${encodeURIComponent(nome)}&cpf=${encodeURIComponent(cpf)}`;
-                        window.open(url, '_blank');
-                      }}>FGTS</button>
-                    </div>
                     <h4 className="font-semibold mb-4">Informações Básicas</h4>
                     <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
                       <div>
