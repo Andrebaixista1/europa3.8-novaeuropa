@@ -330,7 +330,7 @@ const IndividualQueryDashboard: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
           >
             <h2 className="text-2xl font-semibold text-center mb-8">
-              Consulta Individual
+              Consulta Individual (IN100)
             </h2>
             {consultaIniciada && aguardandoResposta ? (
               <div className="flex flex-col items-center justify-center py-8">
