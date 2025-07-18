@@ -212,6 +212,7 @@ const ConsultaFGTS: React.FC = () => {
         setRedAlertMsg('Cliente não existe ou não foi encontrado.');
         setShowRedAlert(true);
         setErroClienteMostrado(true);
+        setResultData(null);
         setTimeout(() => setShowRedAlert(false), 5000);
       }
     } catch {
@@ -351,7 +352,7 @@ const ConsultaFGTS: React.FC = () => {
           </motion.div>
 
           {/* Renderização dos resultados */}
-          {(() => {
+          {!showRedAlert && (() => {
             if (Array.isArray(resultData)) {
               // Se vier array vazio ou só com objetos vazios
               if ((resultData.length === 0 || resultData.every(obj => Object.keys(obj).length === 0))) {
