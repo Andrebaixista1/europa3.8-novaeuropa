@@ -56,6 +56,15 @@ const ConsultaFGTS: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSearching, setIsSearching] = useState(false);
   
+  // Preencher automaticamente Nome e CPF vindos da URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const nomeParam = params.get("nome");
+    const cpfParam = params.get("cpf");
+    if (nomeParam) setNome(nomeParam);
+    if (cpfParam) setCpf(cpfParam);
+  }, []);
+
   const [accountLimits, setAccountLimits] = useState<AccountLimits | null>(null);
   const [isLoadingLimits, setIsLoadingLimits] = useState(false);
   const [resultData, setResultData] = useState<FGTSResponse | null>(null);
