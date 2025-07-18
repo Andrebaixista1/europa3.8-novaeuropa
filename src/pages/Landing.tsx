@@ -273,7 +273,7 @@ const Landing: React.FC = () => {
               icon={<Search size={32} className="text-white" />}
               title={
                 <>
-                  Consulta Individual{" "}
+                  Consulta Individual (IN100){" "}
                 </>
               }
               description="Pesquise informações específicas com precisão e resultados detalhados."
