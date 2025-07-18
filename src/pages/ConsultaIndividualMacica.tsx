@@ -152,6 +152,13 @@ const ConsultaFGTS: React.FC = () => {
     return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   }
 
+  // Função para formatar taxa decimal para percentual brasileiro
+  function formatPercentBR(value: any) {
+    const n = Number(value);
+    if (isNaN(n)) return "-";
+    return (n * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErr: FormErrors = {};
@@ -537,6 +544,10 @@ const ConsultaFGTS: React.FC = () => {
                       <div>
                         <dt className="text-sm text-neutral-500">Valor Empréstimo:</dt>
                         <dd className="font-medium">{formatCurrencyBR(row["vl_empres_tratado"])} </dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm text-neutral-500">Taxa:</dt>
+                        <dd className="font-medium">{formatPercentBR(row["taxa"])} </dd>
                       </div>
                       <div>
                         <dt className="text-sm text-neutral-500">Início Desconto:</dt>
