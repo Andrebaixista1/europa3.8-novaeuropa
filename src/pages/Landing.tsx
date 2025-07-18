@@ -252,22 +252,7 @@ const Landing: React.FC = () => {
               onClick={handleLuaAiQuery}
               disabled={true}
             />
-            <QueryOption
-              icon={<Database size={32} className="text-white" />}
-              title={
-                <>
-                  Consulta em Lote{" "}
-                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded">
-                    Bloqueada
-                  </span>
-                </>
-              }
-              description="Faça consultas em lote para múltiplos cadastros de uma só vez."
-              onClick={handleBatchQuery}
-              disabled={
-                !(isAuthenticated && user?.hierarquia === 1)
-              }
-            />
+            
 
             <QueryOption
               icon={<Search size={32} className="text-white" />}
@@ -330,6 +315,24 @@ const Landing: React.FC = () => {
 
             <QueryOption
               icon={<UserPlus size={32} className="text-white" />}
+              title={
+                <>
+                  Consulta Individual (Maciça){" "}
+                  <br></br>
+                  <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">
+                    Em Breve
+                  </span>
+                </>
+              }
+              description="Você já pode consultar nossa base interna da Maciça, especialmente dedicada a clientes para portabilidade."
+              onClick={() => navigate("/dashboard/macica-atualizada")}
+              disabled={
+                !(isAuthenticated && user?.hierarquia === 1)
+              }
+            />
+
+            <QueryOption
+              icon={<UserPlus size={32} className="text-white" />}
               title="Gestão de Usuarios"
               description="Gerencie e crie novos logins de acesso."
               onClick={() => navigate("/dashboard/create-logins")}
@@ -343,6 +346,22 @@ const Landing: React.FC = () => {
               title="Gestão de Recargas"
               description="Administração eficiente de recargas de saldo."
               onClick={() => navigate("/dashboard/recharge-user")}
+              disabled={
+                !(isAuthenticated && user?.hierarquia === 1)
+              }
+            />
+            <QueryOption
+              icon={<Database size={32} className="text-white" />}
+              title={
+                <>
+                  Consulta em Lote{" "}
+                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded">
+                    Bloqueada
+                  </span>
+                </>
+              }
+              description="Faça consultas em lote para múltiplos cadastros de uma só vez."
+              onClick={handleBatchQuery}
               disabled={
                 !(isAuthenticated && user?.hierarquia === 1)
               }
