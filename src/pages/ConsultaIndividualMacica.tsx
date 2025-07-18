@@ -10,6 +10,7 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
+  MoveVertical,
 } from "lucide-react";
 import InputMask from "react-input-mask";
 import DashboardHeader from "../components/DashboardHeader";
@@ -69,6 +70,13 @@ const ConsultaFGTS: React.FC = () => {
   // Estado para nomes dos bancos
   const [nomeBancoPagamento, setNomeBancoPagamento] = useState<string>("");
   const [nomeBancoEmprestimo, setNomeBancoEmprestimo] = useState<string>("");
+
+  // Estado para evitar toast duplicado
+  const [erroClienteMostrado, setErroClienteMostrado] = useState(false);
+
+  // Mensagem de erro temporária
+  const [showRedAlert, setShowRedAlert] = useState(false);
+  const [redAlertMsg, setRedAlertMsg] = useState("");
 
   const fetchUserBalance = async () => {
     if (!user) return;
@@ -172,9 +180,33 @@ const ConsultaFGTS: React.FC = () => {
       });
       if (!res.ok) throw new Error();
       const json = await res.json();
+      // Verificar se o resultado é válido antes de mostrar o toast de sucesso ou erro
+      let dadosValidos = true;
+      if (Array.isArray(json)) {
+        if (json.length === 0 || json.every(obj => Object.keys(obj).length === 0)) dadosValidos = false;
+        else {
+          // Verifica se todos os campos principais estão zerados no primeiro item
+          const row = json[0];
+          const camposPrincipais = [row["nome segurado"], row["nb_tratado"], row["nu_cpf_tratado"], row["esp"], row["dt_nascimento_tratado"], row["idade"]];
+          if (camposPrincipais.every(v => !v || v === 0 || v === "0")) dadosValidos = false;
+        }
+      } else if (json && typeof json === 'object') {
+        if (Object.keys(json).length === 0) dadosValidos = false;
+        else {
+          const camposPrincipais = [json["nome segurado"], json["nb_tratado"], json["nu_cpf_tratado"], json["esp"], json["dt_nascimento_tratado"], json["idade"]];
+          if (camposPrincipais.every(v => !v || v === 0 || v === "0")) dadosValidos = false;
+        }
+      }
       setResultData(json); // <--- usar o objeto inteiro
-      toast.success("Consulta realizada com sucesso!", { autoClose: 3000 });
-      await fetchUserBalance();
+      if (dadosValidos) {
+        toast.success("Consulta realizada com sucesso!", { autoClose: 3000 });
+        await fetchUserBalance();
+      } else {
+        setRedAlertMsg('Cliente não existe ou não foi encontrado.');
+        setShowRedAlert(true);
+        setErroClienteMostrado(true);
+        setTimeout(() => setShowRedAlert(false), 5000);
+      }
     } catch {
       toast.error("Erro ao processar a solicitação", { autoClose: 3000 });
     } finally {
@@ -213,6 +245,19 @@ const ConsultaFGTS: React.FC = () => {
     "quant_parcelas_tratado": "Qtd Parcelas",
     "data_update": "Data Atualização"
   };
+
+  // Mensagem amarela temporária
+  const [showYellowAlert, setShowYellowAlert] = useState(true);
+  useEffect(() => {
+    setShowYellowAlert(true);
+    const timer = setTimeout(() => setShowYellowAlert(false), 15000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Resetar erroClienteMostrado ao pesquisar
+  useEffect(() => {
+    setErroClienteMostrado(false);
+  }, [isSearching]);
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
@@ -258,18 +303,37 @@ const ConsultaFGTS: React.FC = () => {
           </motion.div>
 
           <motion.div className="bg-white border border-neutral-200 rounded-xl shadow p-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            {/* Alerta vermelho */}
+            {showRedAlert && (
+              <div className="mb-4 p-3 rounded bg-red-100 border border-red-300 text-red-700 text-center font-medium transition-opacity duration-500">
+                {redAlertMsg}
+              </div>
+            )}
+            {/* Alerta amarelo */}
+            {showYellowAlert && (
+              <div className="mb-4 p-3 rounded bg-yellow-100 border border-yellow-300 text-yellow-800 text-center font-medium transition-opacity duration-500">
+                Nenhuma consulta será descontada aqui. <br></br>
+                Você pode consultar CPF ou Número do Benefício individualmente. Somente <i><b>um</b></i> é necessário.
+              </div>
+            )}
             <h2 className="text-2xl font-semibold text-center mb-8">Consulta Individual (Maciça)</h2>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="cpf" className="block text-sm font-medium text-neutral-700 mb-1">
-                  CPF <span className="text-error-500">*</span>
+                  CPF
                 </label>
                 <InputMask id="cpf" mask="999.999.999-99" value={cpf} onChange={e => setCpf(e.target.value)} className={`europa-input ${errors.cpf ? "border-error-500" : ""}`} placeholder="000.000.000-00" />
                 {errors.cpf && <p className="mt-1 text-sm text-error-500">{errors.cpf}</p>}
               </div>
-              <div>
+              {/* Ícone E/OU entre os campos */}
+              <div className="flex justify-center" style={{ paddingTop: '22px', marginTop: '-5px', marginBottom: '-30px' }}>
+                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400">
+                  <MoveVertical size={28} className="text-white" />
+                </span>
+              </div>
+              <div className="mt-0">
                 <label htmlFor="nb" className="block text-sm font-medium text-neutral-700 mb-1">
-                  Número do Benefício <span className="text-error-500">*</span>
+                  Número do Benefício
                 </label>
                 <InputMask id="nb" mask="999.999.999-9" value={nb} onChange={e => setNb(e.target.value)} className="europa-input" placeholder="000.000.000-0" />
               </div>
@@ -281,7 +345,12 @@ const ConsultaFGTS: React.FC = () => {
 
           {/* Renderização dos resultados */}
           {(() => {
-            if (Array.isArray(resultData) && resultData.length > 0) {
+            if (Array.isArray(resultData)) {
+              // Se vier array vazio ou só com objetos vazios
+              if ((resultData.length === 0 || resultData.every(obj => Object.keys(obj).length === 0))) {
+                return null;
+              }
+              if (resultData.length > 0) {
               // Simulação: se no futuro vier arrays para endereço/banco, adapte aqui
               // Por enquanto, cada contrato tem 1 endereço/banco, mas já preparado para múltiplos
               const contratos = resultData;
@@ -347,12 +416,21 @@ const ConsultaFGTS: React.FC = () => {
                         </div>
                       )}
                       <div>
+                        <dt className="text-sm text-neutral-500">Espécie:</dt>
+                        <dd className="font-medium">{row["esp"] || "-"}</dd>
+                      </div>
+                      <div>
                         <dt className="text-sm text-neutral-500">Data de Nascimento:</dt>
                         <dd className="font-medium">{formatDateBR(row["dt_nascimento_tratado"])}</dd>
                       </div>
                       <div>
                         <dt className="text-sm text-neutral-500">Idade:</dt>
                         <dd className="font-medium">{row["idade"] || "-"}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm text-neutral-500">Data Atualização:</dt>
+                        <dd className="font-medium text-green-600">{formatDateBR(row["data_update"])}
+                        </dd>
                       </div>
                     </dl>
                   </div>
@@ -449,11 +527,6 @@ const ConsultaFGTS: React.FC = () => {
                         <dd className="font-medium">{row["quant_parcelas_tratado"] || "-"}</dd>
                       </div>
                       <div>
-                        <dt className="text-sm text-neutral-500">Data Atualização:</dt>
-                        <dd className="font-medium">{formatDateBR(row["data_update"])}
-                        </dd>
-                      </div>
-                      <div>
                         <dt className="text-sm text-neutral-500">Valor Benefício:</dt>
                         <dd className="font-medium">{formatCurrencyBR(row["vl_beneficio_tratado"])} </dd>
                       </div>
@@ -481,8 +554,26 @@ const ConsultaFGTS: React.FC = () => {
                 </AnimatePresence>
                 </>
               );
+            }
             } else if (resultData && typeof resultData === 'object') {
+              // Se vier objeto vazio
+              if (Object.keys(resultData).length === 0) {
+                return null;
+              }
               const row: Record<string, any> = resultData;
+              // Verificação de cliente não encontrado
+              const camposPrincipais = [
+                row["nome segurado"],
+                row["nb_tratado"],
+                row["nu_cpf_tratado"],
+                row["esp"],
+                row["dt_nascimento_tratado"],
+                row["idade"]
+              ];
+              const todosZerados = camposPrincipais.every(v => !v || v === 0 || v === "0");
+              if (todosZerados) {
+                return null;
+              }
               return (
                 <motion.div className="space-y-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                   {/* Informações Básicas */}
@@ -505,6 +596,10 @@ const ConsultaFGTS: React.FC = () => {
                           <dd className="font-medium">{row["nu_cpf_tratado"]}</dd>
                         </div>
                       )}
+                      <div>
+                        <dt className="text-sm text-neutral-500">Espécie:</dt>
+                        <dd className="font-medium">{row["esp"] || "-"}</dd>
+                      </div>
                       <div>
                         <dt className="text-sm text-neutral-500">Data de Nascimento:</dt>
                         <dd className="font-medium">{formatDateBR(row["dt_nascimento_tratado"])}</dd>
