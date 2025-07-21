@@ -13,6 +13,8 @@ import {
   MoveVertical,
   Clipboard,
   Check,
+  ArrowDown,
+  ArrowUp,
 } from "lucide-react";
 import InputMask from "react-input-mask";
 import DashboardHeader from "../components/DashboardHeader";
@@ -65,13 +67,11 @@ const ConsultaFGTS: React.FC = () => {
   const [isLoadingLimits, setIsLoadingLimits] = useState(false);
   const [resultData, setResultData] = useState<any>(null);
   // Carrosseis para contratos, endereços, bancos
-  const [contratoIdx, setContratoIdx] = useState(0);
-  const [endIdx, setEndIdx] = useState(0);
-  const [bankIdx, setBankIdx] = useState(0);
-
+  // Remover estados e lógica de paginação e filtro de datas
   // Estado para nomes dos bancos
   const [nomeBancoPagamento, setNomeBancoPagamento] = useState<string>("");
-  const [nomeBancoEmprestimo, setNomeBancoEmprestimo] = useState<string>("");
+  const [nomesBancoPagamento, setNomesBancoPagamento] = useState<{[codigo: string]: string}>({});
+  const [nomesBancoEmprestimo, setNomesBancoEmprestimo] = useState<{[codigo: string]: string}>({});
 
   // Estado para evitar toast duplicado
   const [erroClienteMostrado, setErroClienteMostrado] = useState(false);
@@ -86,6 +86,19 @@ const ConsultaFGTS: React.FC = () => {
   // Estados para animação do botão de copiar
   const [copiandoCPF, setCopiandoCPF] = useState<'idle' | 'loading' | 'done'>("idle");
   const [copiandoNB, setCopiandoNB] = useState<'idle' | 'loading' | 'done'>("idle");
+
+  // Calcular datas mínima e máxima dos contratos
+  useEffect(() => {
+    if (Array.isArray(resultData) && resultData.length > 0) {
+      const datas = resultData.map((c: any) => c["data_update"]).filter(Boolean).map((d: string) => new Date(d));
+      if (datas.length) {
+        const min = new Date(Math.min(...datas.map(d => d.getTime())));
+        const max = new Date(Math.max(...datas.map(d => d.getTime())));
+        const toInput = (d: Date) => d.toISOString().slice(0,10);
+        // Remover filtro de mais recente/mais antigo
+      }
+    }
+  }, [resultData]);
 
   const fetchUserBalance = async () => {
     if (!user) return;
@@ -119,7 +132,7 @@ const ConsultaFGTS: React.FC = () => {
   // Buscar nome do banco ao trocar de linha
   useEffect(() => {
     if (Array.isArray(resultData) && resultData.length > 0) {
-      const row = resultData[contratoIdx];
+      const row = resultData[0]; // Pegar o primeiro registro para buscar bancos
       // Banco Pagamento
       const codBancoPagto = row["id-banco-pagto"];
       if (codBancoPagto) {
@@ -130,18 +143,22 @@ const ConsultaFGTS: React.FC = () => {
       } else {
         setNomeBancoPagamento("");
       }
-      // Banco Empréstimo
-      const codBancoEmp = row["id-banco-empres"];
+      // Banco Empréstimo (buscar sempre que mudar de contrato)
+      let codBancoEmp = row["id-banco-empres"];
+      if (typeof codBancoEmp === 'string') codBancoEmp = codBancoEmp.trim().replace(/^0+/, '');
       if (codBancoEmp) {
         fetch(`https://brasilapi.com.br/api/banks/v1/${codBancoEmp}`)
           .then(r => r.ok ? r.json() : null)
-          .then(d => setNomeBancoEmprestimo(d?.name || ""))
-          .catch(() => setNomeBancoEmprestimo(""));
+          .then(d => {
+            console.log('codBancoEmp:', codBancoEmp, 'resposta:', d);
+            setNomesBancoEmprestimo(prev => ({ ...prev, [codBancoEmp]: d?.name || "" }));
+          })
+          .catch(() => setNomesBancoEmprestimo(prev => ({ ...prev, [codBancoEmp]: "" })));
       } else {
-        setNomeBancoEmprestimo("");
+        setNomesBancoEmprestimo(prev => ({ ...prev, [codBancoEmp]: "" }));
       }
     }
-  }, [contratoIdx, resultData]);
+  }, [resultData]);
 
   const validateCPF = (v: string) => v.replace(/\D/g, "").length === 11;
 
@@ -151,6 +168,11 @@ const ConsultaFGTS: React.FC = () => {
   // Função para formatar datas para dd/mm/aaaa
   function formatDateBR(dateStr?: string) {
     if (!dateStr) return "-";
+    // Corrigir bug de fuso: se vier no formato YYYY-MM-DD, monta manualmente
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [y, m, d] = dateStr.split("-");
+      return `${d}/${m}/${y}`;
+    }
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return "-";
     return d.toLocaleDateString("pt-BR");
@@ -168,8 +190,12 @@ const ConsultaFGTS: React.FC = () => {
     return (n * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
   }
 
+  // 2. Estado buscou para controlar exibição da mensagem
+  const [buscou, setBuscou] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setBuscou(true);
     const newErr: FormErrors = {};
     if (!cpf.replace(/\D/g, "") && !nb.replace(/\D/g, "")) {
       newErr.cpf = "Preencha CPF ou Número do Benefício";
@@ -278,12 +304,132 @@ const ConsultaFGTS: React.FC = () => {
 
   // Função para abrir nova aba com os dados preenchidos
   function handleIN100Consultar() {
-    const row = resultData && resultData[contratoIdx];
+    const row = resultData && resultData[0]; // Pegar o primeiro registro
     const cpf = row ? row["nu_cpf_tratado"] : "";
     const nb = row ? row["nb_tratado"] : "";
     const url = `/dashboard/individual?cpf=${encodeURIComponent(cpf)}&nb=${encodeURIComponent(nb)}`;
     window.open(url, '_blank');
   }
+
+  // Função para normalizar cliente (incluindo espécie)
+  function normalizeCliente(row: any): string {
+    return [
+      (row["nome segurado"] || "").toString().trim().toUpperCase(),
+      (row["nu_cpf_tratado"] || "").toString().replace(/\D/g, ""),
+      (row["nb_tratado"] || "").toString().replace(/\D/g, ""),
+      (row["esp"] || "").toString().trim()
+    ].join('|');
+  }
+
+  function groupByCliente(rows: any[]): any[][] {
+    const map = new Map();
+    for (const row of rows) {
+      const key = normalizeCliente(row);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(row);
+    }
+    return Array.from(map.values());
+  }
+
+  function getUniqueRows(rows: any[], keys: string[]): any[] {
+    const map = new Map();
+    for (const row of rows) {
+      const id = keys.map((k: string) => (row[k] || '').toString().trim()).join('|');
+      if (!map.has(id) || Object.values(row).filter(Boolean).length > Object.values(map.get(id)).filter(Boolean).length) {
+        map.set(id, row);
+      }
+    }
+    return Array.from(map.values());
+  }
+
+  const gruposClientes = Array.isArray(resultData) ? groupByCliente(resultData) : [];
+  const [paginaCliente, setPaginaCliente] = useState(0);
+  useEffect(() => { setPaginaCliente(0); }, [resultData]);
+  const clienteAtual = gruposClientes[paginaCliente] || [];
+
+  // Em Informações Bancárias, filtrar linhas únicas do cliente atual
+  const linhasBancarias = getUniqueRows(clienteAtual, ["id-banco-pagto", "id-agencia-banco", "nu-conta-corrente", "id-orgao-pagador", "cs-meio-pagto"]);
+  // Em Informações do Empréstimo, filtrar linhas únicas por banco/contrato e ordenar por data_update desc
+  const linhasEmprestimo = getUniqueRows(clienteAtual, ["id-banco-empres", "id-contrato-empres"]).sort((a: any, b: any) => {
+    const dA = new Date(a["data_update"]);
+    const dB = new Date(b["data_update"]);
+    const timeA = isNaN(dA.getTime()) ? 0 : dA.getTime();
+    const timeB = isNaN(dB.getTime()) ? 0 : dB.getTime();
+    return timeB - timeA;
+  });
+
+  // Em Endereço, filtrar linhas únicas do cliente atual
+  const linhasEnderecos = getUniqueRows(clienteAtual, ["endereco", "bairro", "municipio", "uf", "cep"]);
+
+  // Buscar nomes de bancos únicos do cliente atual
+  useEffect(() => {
+    if (Array.isArray(clienteAtual)) {
+      // Bancos Pagamento
+      const codigosPagto = Array.from(new Set(clienteAtual.map(r => (r["id-banco-pagto"] || '').toString().trim()).filter(Boolean)));
+      codigosPagto.forEach(cod => {
+        // Se já buscou e deu erro, não busca de novo
+        if (nomesBancoPagamento[cod] === "-" || nomesBancoPagamento[cod] === "") return;
+        if (!nomesBancoPagamento[cod]) {
+          fetch(`https://brasilapi.com.br/api/banks/v1/${cod}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(d => {
+              if (!d || d.type === "BANK_CODE_NOT_FOUND") {
+                setNomesBancoPagamento(prev => ({ ...prev, [cod]: "-" }));
+              } else {
+                setNomesBancoPagamento(prev => ({ ...prev, [cod]: d?.name || "-" }));
+              }
+            })
+            .catch(() => setNomesBancoPagamento(prev => ({ ...prev, [cod]: "-" })));
+        }
+      });
+      // Bancos Empréstimo
+      const codigosEmp = Array.from(new Set(clienteAtual.map(r => (r["id-banco-empres"] || '').toString().trim()).filter(Boolean)));
+      codigosEmp.forEach(cod => {
+        // Se já buscou e deu erro, não busca de novo
+        if (nomesBancoEmprestimo[cod] === "-" || nomesBancoEmprestimo[cod] === "") return;
+        if (!nomesBancoEmprestimo[cod]) {
+          fetch(`https://brasilapi.com.br/api/banks/v1/${cod}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(d => {
+              if (!d || d.type === "BANK_CODE_NOT_FOUND") {
+                setNomesBancoEmprestimo(prev => ({ ...prev, [cod]: "-" }));
+              } else {
+                setNomesBancoEmprestimo(prev => ({ ...prev, [cod]: d?.name || "-" }));
+              }
+            })
+            .catch(() => setNomesBancoEmprestimo(prev => ({ ...prev, [cod]: "-" })));
+        }
+      });
+    }
+  }, [clienteAtual]);
+
+  // --- ESTADO PARA SANFONA DE ANOS ---
+  const [anosAbertos, setAnosAbertos] = useState<{ [ano: string]: boolean }>({});
+  // Agrupar linhasEmprestimo por ano de data_update
+  function agruparPorAnoEmprestimo(linhas: any[]) {
+    const grupos: { [ano: string]: any[] } = {};
+    linhas.forEach(row => {
+      const d = new Date(row["data_update"]);
+      const ano = isNaN(d.getTime()) ? "-" : d.getFullYear().toString();
+      if (!grupos[ano]) grupos[ano] = [];
+      grupos[ano].push(row);
+    });
+    return grupos;
+  }
+  const gruposEmprestimoPorAno = agruparPorAnoEmprestimo(linhasEmprestimo);
+  const anosOrdenados = Object.keys(gruposEmprestimoPorAno).sort((a, b) => b.localeCompare(a));
+
+  // Só inicializa anos abertos quando mudar o conjunto de anos
+  const anosString = anosOrdenados.join(',');
+  const [anosSnapshot, setAnosSnapshot] = useState(anosString);
+  useEffect(() => {
+    if (anosString !== anosSnapshot) {
+      // Novo conjunto de anos, abre só o mais recente
+      const maisRecente = anosOrdenados[0];
+      setAnosAbertos({ [maisRecente]: true });
+      setAnosSnapshot(anosString);
+    }
+  }, [anosString, anosSnapshot, anosOrdenados]);
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
@@ -371,482 +517,266 @@ const ConsultaFGTS: React.FC = () => {
 
           {/* Renderização dos resultados */}
           {!showRedAlert && (() => {
-            if (Array.isArray(resultData)) {
-              // Se vier array vazio ou só com objetos vazios
-              if ((resultData.length === 0 || resultData.every(obj => Object.keys(obj).length === 0))) {
-                return null;
-              }
-              if (resultData.length > 0) {
-              // Simulação: se no futuro vier arrays para endereço/banco, adapte aqui
-              // Por enquanto, cada contrato tem 1 endereço/banco, mas já preparado para múltiplos
-              const contratos = resultData;
-              const row: Record<string, any> = contratos[contratoIdx];
-              // Mock para múltiplos endereços/bancos (substitua por row.enderecos, row.bancos se vier assim do back)
-              const enderecos = [row];
-              const bancos = [row];
-              // Se vier arrays reais, use: const enderecos = row.enderecos || [row];
-              // const bancos = row.bancos || [row];
-              const endereco = enderecos[endIdx];
-              const banco = bancos[bankIdx];
-              return (
-                <>
-                  {/* Paginação geral no topo */}
-                  {contratos.length > 1 && (
-                    <div className="flex justify-between items-center mb-2 gap-2">
-                      {/* Botões IN100 e FGTS reposicionados */}
-                      <div className="flex gap-2">
-                        <button type="button" className="flex items-center gap-1 px-3 py-1 rounded-lg bg-white border border-blue-500 text-blue-600 font-semibold shadow-sm hover:bg-blue-50 transition-colors" onClick={() => {
-                          const row = resultData && resultData[contratoIdx];
-                          const cpf = row ? row["nu_cpf_tratado"] : "";
-                          const nb = row ? row["nb_tratado"] : "";
-                          const url = `/dashboard/individual?cpf=${encodeURIComponent(cpf)}&nb=${encodeURIComponent(nb)}`;
-                          window.open(url, '_blank');
-                        }}>
-                          <FileText size={16} className="mr-1" /> IN100
-                        </button>
-                        <button type="button" className="flex items-center gap-1 px-3 py-1 rounded-lg bg-white border border-green-500 text-green-600 font-semibold shadow-sm hover:bg-green-50 transition-colors" onClick={() => {
-                          const row = resultData && resultData[contratoIdx];
-                          const nome = row ? row["nome segurado"] : "";
-                          const cpf = row ? row["nu_cpf_tratado"] : "";
-                          const url = `/dashboard/consulta-fgts?nome=${encodeURIComponent(nome)}&cpf=${encodeURIComponent(cpf)}`;
-                          window.open(url, '_blank');
-                        }}>
-                          <DollarSign size={16} className="mr-1" /> FGTS
-                        </button>
-                      </div>
-                      {/* Paginação */}
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setContratoIdx(contratoIdx === 0 ? contratos.length - 1 : contratoIdx - 1)}
-                          className="p-2 rounded-full border border-neutral-300 hover:bg-neutral-100"
-                          aria-label="Anterior"
-                        >
-                          <ChevronLeft size={20} />
-                        </button>
-                        <span className="text-sm text-neutral-700 font-medium min-w-[48px] text-center">{contratoIdx + 1} de {contratos.length}</span>
-                        <button
-                          type="button"
-                          onClick={() => setContratoIdx(contratoIdx === contratos.length - 1 ? 0 : contratoIdx + 1)}
-                          className="p-2 rounded-full border border-neutral-300 hover:bg-neutral-100"
-                          aria-label="Próximo"
-                        >
-                          <ChevronRight size={20} />
-                        </button>
-                      </div>
+            if (gruposClientes.length === 0) {
+              if (!buscou) return null;
+              return <div className="text-center text-neutral-500 py-12">Nenhum resultado encontrado para o período selecionado.</div>;
+            }
+            // Renderizar apenas UM cliente por vez (clienteAtual)
+            const cliente = clienteAtual;
+            if (!cliente || cliente.length === 0) return null;
+            // Dados básicos do cliente (primeira linha)
+            const row = cliente[0];
+            return (
+              <>
+                {/* Botões IN100, FGTS + Paginação de clientes */}
+                <div className="flex flex-wrap justify-center items-center gap-4 mb-4">
+                  {/* Paginação de clientes */}
+                  {gruposClientes.length > 1 && (
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={() => setPaginaCliente(paginaCliente === 0 ? gruposClientes.length - 1 : paginaCliente - 1)} className="p-2 rounded-full border border-neutral-300 hover:bg-neutral-100" aria-label="Anterior">
+                        <ChevronLeft size={20} />
+                      </button>
+                      <span className="text-sm text-neutral-700 font-medium min-w-[48px] text-center">{paginaCliente + 1} de {gruposClientes.length} — {clienteAtual[0]?.["nome segurado"]}</span>
+                      <button type="button" onClick={() => setPaginaCliente(paginaCliente === gruposClientes.length - 1 ? 0 : paginaCliente + 1)} className="p-2 rounded-full border border-neutral-300 hover:bg-neutral-100" aria-label="Próximo">
+                        <ChevronRight size={20} />
+                      </button>
                     </div>
                   )}
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={contratoIdx}
-                      className="space-y-6"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                  {/* Informações Básicas */}
-                  <div className="bg-white border border-neutral-200 rounded-xl shadow p-6 relative">
-                    <h4 className="font-semibold mb-4">Informações Básicas</h4>
-                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                      <div>
-                        <dt className="text-sm text-neutral-500">Nome:</dt>
-                        <dd className="font-medium">{row["nome segurado"] || "-"}</dd>
-                      </div>
-                      {row["nb_tratado"] > 0 && (
-                        <div className="flex items-center gap-2">
-                          <dt className="text-sm text-neutral-500">NB:</dt>
-                          <div className="flex flex-row items-center">
-                            <dd className="font-medium mb-0">{row["nb_tratado"].toString().replace(/(\d{3})(\d{3})(\d{3})(\d{1})/, "$1.$2.$3-$4")}</dd>
-                            <button type="button" className="ml-2 p-1 rounded hover:bg-neutral-100 flex items-center" style={{lineHeight:0}} onClick={async () => {
-                              if (copiandoNB !== 'idle') return;
-                              setCopiandoNB('loading');
-                              navigator.clipboard.writeText(row["nb_tratado"].toString());
-                              await new Promise(r => setTimeout(r, 100));
-                              setCopiandoNB('done');
-                              await new Promise(r => setTimeout(r, 200));
-                              setCopiandoNB('idle');
-                              toast.success("NB copiado!");
-                            }}>
-                              {copiandoNB === 'idle' && <Clipboard size={16} className="text-neutral-400 hover:text-neutral-600" />}
-                              {copiandoNB === 'loading' && <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />}
-                              {copiandoNB === 'done' && <Check size={16} className="text-green-600" />}
-                            </button>
+                  {/* Botão IN100 */}
+                  <button type="button" className="flex items-center gap-1 px-3 py-1 rounded-lg bg-white border border-blue-500 text-blue-600 font-semibold shadow-sm hover:bg-blue-50 transition-colors" onClick={handleIN100Consultar}>
+                    <FileText size={16} className="mr-1" /> IN100
+                  </button>
+                  {/* Botão FGTS */}
+                  <button type="button" className="flex items-center gap-1 px-3 py-1 rounded-lg bg-white border border-green-500 text-green-600 font-semibold shadow-sm hover:bg-green-50 transition-colors" onClick={() => {
+                    const nome = clienteAtual[0] ? clienteAtual[0]["nome segurado"] : "";
+                    const cpf = clienteAtual[0] ? clienteAtual[0]["nu_cpf_tratado"] : "";
+                    const url = `/dashboard/consulta-fgts?nome=${encodeURIComponent(nome)}&cpf=${encodeURIComponent(cpf)}`;
+                    window.open(url, '_blank');
+                  }}>
+                    <DollarSign size={16} className="mr-1" /> FGTS
+                  </button>
+                </div>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={paginaCliente}
+                    className="space-y-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {/* Informações Básicas */}
+                        <div className="bg-white border border-neutral-200 rounded-xl shadow p-6 relative">
+                          <h4 className="font-semibold mb-4">Informações Básicas</h4>
+                          <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                            <div>
+                              <dt className="text-sm text-neutral-500">Nome:</dt>
+                              <dd className="font-medium">{row["nome segurado"] || "-"}</dd>
+                            </div>
+                            {row["nb_tratado"] > 0 && (
+                              <div className="flex items-center gap-2">
+                                <dt className="text-sm text-neutral-500">NB:</dt>
+                                <div className="flex flex-row items-center">
+                                  <dd className="font-medium mb-0">{row["nb_tratado"].toString().replace(/(\d{3})(\d{3})(\d{3})(\d{1})/, "$1.$2.$3-$4")}</dd>
+                                  <button type="button" className="ml-2 p-1 rounded hover:bg-neutral-100 flex items-center" style={{lineHeight:0}} onClick={async () => {
+                                    if (copiandoNB !== 'idle') return;
+                                    setCopiandoNB('loading');
+                                    navigator.clipboard.writeText(row["nb_tratado"].toString());
+                                    await new Promise(r => setTimeout(r, 100));
+                                    setCopiandoNB('done');
+                                    await new Promise(r => setTimeout(r, 200));
+                                    setCopiandoNB('idle');
+                                    toast.success("NB copiado!");
+                                  }}>
+                                    {copiandoNB === 'idle' && <Clipboard size={16} className="text-neutral-400 hover:text-neutral-600" />}
+                                    {copiandoNB === 'loading' && <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />}
+                                    {copiandoNB === 'done' && <Check size={16} className="text-green-600" />}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            {row["nu_cpf_tratado"] > 0 && (
+                              <div className="flex items-center gap-2">
+                                <dt className="text-sm text-neutral-500">CPF:</dt>
+                                <div className="flex flex-row items-center">
+                                  <dd className="font-medium mb-0">{row["nu_cpf_tratado"].toString().replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")}</dd>
+                                  <button type="button" className="ml-2 p-1 rounded hover:bg-neutral-100 flex items-center" style={{lineHeight:0}} onClick={async () => {
+                                    if (copiandoCPF !== 'idle') return;
+                                    setCopiandoCPF('loading');
+                                    navigator.clipboard.writeText(row["nu_cpf_tratado"].toString());
+                                    await new Promise(r => setTimeout(r, 100));
+                                    setCopiandoCPF('done');
+                                    await new Promise(r => setTimeout(r, 200));
+                                    setCopiandoCPF('idle');
+                                    toast.success("CPF copiado!");
+                                  }}>
+                                    {copiandoCPF === 'idle' && <Clipboard size={16} className="text-neutral-400 hover:text-neutral-600" />}
+                                    {copiandoCPF === 'loading' && <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />}
+                                    {copiandoCPF === 'done' && <Check size={16} className="text-green-600" />}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            <div>
+                              <dt className="text-sm text-neutral-500">Espécie:</dt>
+                              <dd className="font-medium">{row["esp"] || "-"}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-sm text-neutral-500">Data de Nascimento:</dt>
+                              <dd className="font-medium">{formatDateBR(row["dt_nascimento_tratado"])}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-sm text-neutral-500">Idade:</dt>
+                              <dd className="font-medium">{row["idade"] || "-"}</dd>
+                            </div>
+                          </dl>
+                        </div>
+                        {/* Endereço */}
+                        <div className="bg-white border border-neutral-200 rounded-xl shadow p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-semibold">Endereço</h4>
+                          </div>
+                          <table className="min-w-full text-sm">
+                            <thead>
+                              <tr>
+                                <th className="px-2 py-1 text-left">Endereço</th>
+                                <th className="px-2 py-1 text-left">Bairro</th>
+                                <th className="px-2 py-1 text-left">Município</th>
+                                <th className="px-2 py-1 text-left">UF</th>
+                                <th className="px-2 py-1 text-left">CEP</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {linhasEnderecos.map((row: any, idx: number) => (
+                                <tr key={idx} className="border-t">
+                                  <td className="px-2 py-1">{row["endereco"] || "-"}</td>
+                                  <td className="px-2 py-1">{row["bairro"] || "-"}</td>
+                                  <td className="px-2 py-1">{row["municipio"] || "-"}</td>
+                                  <td className="px-2 py-1">{row["uf"] || "-"}</td>
+                                  <td className="px-2 py-1">{row["cep"] || "-"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        {/* Informações Bancárias */}
+                        <div className="bg-white border border-neutral-200 rounded-xl shadow p-6 max-w-4xl mx-auto w-full">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-semibold">Informações Bancárias</h4>
+                          </div>
+                          <div className="overflow-x-auto w-full">
+                            <table className="min-w-[1200px] text-sm">
+                              <thead>
+                                <tr>
+                                  <th className="px-2 py-1 text-left">Banco Pagamento</th>
+                                  <th className="px-2 py-1 text-left">Nome do Banco</th>
+                                  <th className="px-2 py-1 text-left">Agência Pagamento</th>
+                                  <th className="px-2 py-1 text-left">Conta Corrente</th>
+                                  <th className="px-2 py-1 text-left">Órgão Pagador</th>
+                                  <th className="px-2 py-1 text-left">Meio de Pagamento</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {linhasBancarias.map((row, idx) => (
+                                  <tr key={idx} className="border-t">
+                                    <td className="px-2 py-1">{row["id-banco-pagto"] || "-"}</td>
+                                    <td className="px-2 py-1">{nomesBancoPagamento[row["id-banco-pagto"]?.toString().trim()] || '-'}</td>
+                                    <td className="px-2 py-1">{row["id-agencia-banco"] || "-"}</td>
+                                    <td className="px-2 py-1">{row["nu-conta-corrente"] || "-"}</td>
+                                    <td className="px-2 py-1">{row["id-orgao-pagador"] || "-"}</td>
+                                    <td className="px-2 py-1">{row["cs-meio-pagto"] || "-"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
                           </div>
                         </div>
-                      )}
-                      {row["nu_cpf_tratado"] > 0 && (
-                        <div className="flex items-center gap-2">
-                          <dt className="text-sm text-neutral-500">CPF:</dt>
-                          <div className="flex flex-row items-center">
-                            <dd className="font-medium mb-0">{row["nu_cpf_tratado"].toString().replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")}</dd>
-                            <button type="button" className="ml-2 p-1 rounded hover:bg-neutral-100 flex items-center" style={{lineHeight:0}} onClick={async () => {
-                              if (copiandoCPF !== 'idle') return;
-                              setCopiandoCPF('loading');
-                              navigator.clipboard.writeText(row["nu_cpf_tratado"].toString());
-                              await new Promise(r => setTimeout(r, 100));
-                              setCopiandoCPF('done');
-                              await new Promise(r => setTimeout(r, 200));
-                              setCopiandoCPF('idle');
-                              toast.success("CPF copiado!");
-                            }}>
-                              {copiandoCPF === 'idle' && <Clipboard size={16} className="text-neutral-400 hover:text-neutral-600" />}
-                              {copiandoCPF === 'loading' && <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />}
-                              {copiandoCPF === 'done' && <Check size={16} className="text-green-600" />}
-                            </button>
+                        {/* Informações do Empréstimo */}
+                        <div className="bg-white border border-neutral-200 rounded-xl shadow p-6 max-w-4xl mx-auto w-full">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-semibold">Informações do Empréstimo</h4>
                           </div>
+                          {/* SANFONA POR ANO */}
+                          {anosOrdenados.map(ano => (
+                            <div key={ano} className="mb-2 border rounded-lg overflow-hidden">
+                              <button
+                                type="button"
+                                className="w-full flex items-center justify-between px-4 py-2 bg-neutral-100 hover:bg-neutral-200 font-semibold text-left text-lg transition-colors"
+                                onClick={() => setAnosAbertos(prev => ({ ...prev, [ano]: !prev[ano] }))}
+                              >
+                                <span>{anosOrdenados.length > 1 ? ano : `Ano: ${ano}`}</span>
+                                <span>{anosAbertos[ano] ? (
+                                  <svg width="18" height="18" viewBox="0 0 20 20"><path d="M6 8l4 4 4-4" stroke="#222" strokeWidth="2" fill="none" strokeLinecap="round"/></svg>
+                                ) : (
+                                  <svg width="18" height="18" viewBox="0 0 20 20"><path d="M8 6l4 4-4 4" stroke="#222" strokeWidth="2" fill="none" strokeLinecap="round"/></svg>
+                                )}</span>
+                              </button>
+                              <AnimatePresence initial={false}>
+                                {anosAbertos[ano] && (
+                                  <motion.div
+                                    key={"conteudo-" + ano}
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.25, ease: 'easeInOut' }}
+                                    style={{ overflow: 'hidden', width: '100%' }}
+                                  >
+                                    <div className="overflow-x-auto w-full">
+                                      <table className="min-w-[1200px] text-sm">
+                                        <thead>
+                                          <tr>
+                                            <th className="px-2 py-1 text-left">Banco Empréstimo</th>
+                                            <th className="px-2 py-1 text-left">Nome do Banco</th>
+                                            <th className="px-2 py-1 text-left">Contrato Empréstimo</th>
+                                            <th className="px-2 py-1 text-left">Parcelas Pagas</th>
+                                            <th className="px-2 py-1 text-left">Parcelas Restantes</th>
+                                            <th className="px-2 py-1 text-left">Qtd Parcelas</th>
+                                            <th className="px-2 py-1 text-left">Valor Benefício</th>
+                                            <th className="px-2 py-1 text-left">Valor Parcela</th>
+                                            <th className="px-2 py-1 text-left">Valor Empréstimo</th>
+                                            <th className="px-2 py-1 text-left">Taxa</th>
+                                            <th className="px-2 py-1 text-left">Início Desconto</th>
+                                            <th className="px-2 py-1 text-left">Fim Desconto</th>
+                                            <th className="px-2 py-1 text-left">Data Atualização</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {gruposEmprestimoPorAno[ano].map((row: any, idx: number) => (
+                                            <tr key={idx} className="border-t">
+                                              <td className="px-2 py-1">{row["id-banco-empres"] || "-"}</td>
+                                              <td className="px-2 py-1">{nomesBancoEmprestimo[row["id-banco-empres"]?.toString().trim()] || '-'}</td>
+                                              <td className="px-2 py-1">{row["id-contrato-empres"] || "-"}</td>
+                                              <td className="px-2 py-1">{row["pagas"] || "-"}</td>
+                                              <td className="px-2 py-1">{row["restantes"] || "-"}</td>
+                                              <td className="px-2 py-1">{row["quant_parcelas_tratado"] || "-"}</td>
+                                              <td className="px-2 py-1">{formatCurrencyBR(row["vl_beneficio_tratado"])} </td>
+                                              <td className="px-2 py-1">{formatCurrencyBR(row["vl_parcela_tratado"])} </td>
+                                              <td className="px-2 py-1">{formatCurrencyBR(row["vl_empres_tratado"])} </td>
+                                              <td className="px-2 py-1">{formatPercentBR(row["taxa"])} </td>
+                                              <td className="px-2 py-1">{formatDateBR(row["comp_ini_desconto_tratado"])} </td>
+                                              <td className="px-2 py-1">{formatDateBR(row["comp_fim_desconto_tratado"])} </td>
+                                              <td className="px-2 py-1">{formatDateBR(row["data_update"])} </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          ))}
                         </div>
-                      )}
-                      <div>
-                        <dt className="text-sm text-neutral-500">Espécie:</dt>
-                        <dd className="font-medium">{row["esp"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Data de Nascimento:</dt>
-                        <dd className="font-medium">{formatDateBR(row["dt_nascimento_tratado"])}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Idade:</dt>
-                        <dd className="font-medium">{row["idade"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Data Atualização:</dt>
-                        <dd className="font-medium text-green-600">{formatDateBR(row["data_update"])}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-                  {/* Endereço */}
-                  <div className="bg-white border border-neutral-200 rounded-xl shadow p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold">Endereço</h4>
-                    </div>
-                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                      <div>
-                        <dt className="text-sm text-neutral-500">Endereço:</dt>
-                        <dd className="font-medium">{endereco["endereco"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Bairro:</dt>
-                        <dd className="font-medium">{endereco["bairro"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Município:</dt>
-                        <dd className="font-medium">{endereco["municipio"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">UF:</dt>
-                        <dd className="font-medium">{endereco["uf"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">CEP:</dt>
-                        <dd className="font-medium">{endereco["cep"] || "-"}</dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  {/* Informações Bancárias */}
-                  <div className="bg-white border border-neutral-200 rounded-xl shadow p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold">Informações Bancárias</h4>
-                    </div>
-                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                      <div>
-                        <dt className="text-sm text-neutral-500">Banco Pagamento:</dt>
-                        <dd className="font-medium">{banco["id-banco-pagto"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Nome do Banco:</dt>
-                        <dd className="font-medium">{nomeBancoPagamento || '-'}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Agência Pagamento:</dt>
-                        <dd className="font-medium">{banco["id-agencia-banco"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Conta Corrente:</dt>
-                        <dd className="font-medium">{banco["nu-conta-corrente"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Órgão Pagador:</dt>
-                        <dd className="font-medium">{banco["id-orgao-pagador"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Meio de Pagamento:</dt>
-                        <dd className="font-medium">{banco["cs-meio-pagto"] || "-"}</dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  {/* Informações do Empréstimo */}
-                  <div className="bg-white border border-neutral-200 rounded-xl shadow p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold">Informações do Empréstimo</h4>
-                    </div>
-                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                      <div>
-                        <dt className="text-sm text-neutral-500">Banco Empréstimo:</dt>
-                        <dd className="font-medium">{row["id-banco-empres"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Nome do Banco:</dt>
-                        <dd className="font-medium">{nomeBancoEmprestimo || '-'}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Contrato Empréstimo:</dt>
-                        <dd className="font-medium">{row["id-contrato-empres"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Parcelas Pagas:</dt>
-                        <dd className="font-medium">{row["pagas"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Parcelas Restantes:</dt>
-                        <dd className="font-medium">{row["restantes"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Qtd Parcelas:</dt>
-                        <dd className="font-medium">{row["quant_parcelas_tratado"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Valor Benefício:</dt>
-                        <dd className="font-medium">{formatCurrencyBR(row["vl_beneficio_tratado"])} </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Valor Parcela:</dt>
-                        <dd className="font-medium">{formatCurrencyBR(row["vl_parcela_tratado"])} </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Valor Empréstimo:</dt>
-                        <dd className="font-medium">{formatCurrencyBR(row["vl_empres_tratado"])} </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Taxa:</dt>
-                        <dd className="font-medium">{formatPercentBR(row["taxa"])} </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Início Desconto:</dt>
-                        <dd className="font-medium">{formatDateBR(row["comp_ini_desconto_tratado"])}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Fim Desconto:</dt>
-                        <dd className="font-medium">{formatDateBR(row["comp_fim_desconto_tratado"])}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-                </motion.div>
+                  </motion.div>
                 </AnimatePresence>
-                </>
-              );
-            }
-            } else if (resultData && typeof resultData === 'object') {
-              // Se vier objeto vazio
-              if (Object.keys(resultData).length === 0) {
-                return null;
-              }
-              const row: Record<string, any> = resultData;
-              // Verificação de cliente não encontrado
-              const camposPrincipais = [
-                row["nome segurado"],
-                row["nb_tratado"],
-                row["nu_cpf_tratado"],
-                row["esp"],
-                row["dt_nascimento_tratado"],
-                row["idade"]
-              ];
-              const todosZerados = camposPrincipais.every(v => !v || v === 0 || v === "0");
-              if (todosZerados) {
-                return null;
-              }
-              return (
-                <motion.div className="space-y-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                  {/* Informações Básicas */}
-                  <div className="bg-white border border-neutral-200 rounded-xl shadow p-6">
-                    <h4 className="font-semibold mb-4">Informações Básicas</h4>
-                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                      <div>
-                        <dt className="text-sm text-neutral-500">Nome:</dt>
-                        <dd className="font-medium">{row["nome segurado"] || "-"}</dd>
-                      </div>
-                      {row["nb_tratado"] > 0 && (
-                        <div className="flex items-center gap-2">
-                          <div>
-                            <dt className="text-sm text-neutral-500">NB:</dt>
-                            <dd className="font-medium">{row["nb_tratado"].toString().replace(/(\d{3})(\d{3})(\d{3})(\d{1})/, "$1.$2.$3-$4")}</dd>
-                          </div>
-                          <button type="button" className="ml-1 p-1 rounded hover:bg-neutral-100" onClick={async () => {
-                            if (copiandoNB !== 'idle') return;
-                            setCopiandoNB('loading');
-                            navigator.clipboard.writeText(row["nb_tratado"].toString());
-                            await new Promise(r => setTimeout(r, 100));
-                            setCopiandoNB('done');
-                            await new Promise(r => setTimeout(r, 200));
-                            setCopiandoNB('idle');
-                            toast.success("NB copiado!");
-                          }}>
-                            {copiandoNB === 'idle' && <Clipboard size={16} className="text-neutral-400 hover:text-neutral-600" />}
-                            {copiandoNB === 'loading' && <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />}
-                            {copiandoNB === 'done' && <Check size={16} className="text-green-600" />}
-                          </button>
-                        </div>
-                      )}
-                      {row["nu_cpf_tratado"] > 0 && (
-                        <div className="flex items-center gap-2">
-                          <div>
-                            <dt className="text-sm text-neutral-500">CPF:</dt>
-                            <dd className="font-medium">{row["nu_cpf_tratado"].toString().replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")}</dd>
-                          </div>
-                          <button type="button" className="ml-1 p-1 rounded hover:bg-neutral-100" onClick={async () => {
-                            if (copiandoCPF !== 'idle') return;
-                            setCopiandoCPF('loading');
-                            navigator.clipboard.writeText(row["nu_cpf_tratado"].toString());
-                            await new Promise(r => setTimeout(r, 100));
-                            setCopiandoCPF('done');
-                            await new Promise(r => setTimeout(r, 200));
-                            setCopiandoCPF('idle');
-                            toast.success("CPF copiado!");
-                          }}>
-                            {copiandoCPF === 'idle' && <Clipboard size={16} className="text-neutral-400 hover:text-neutral-600" />}
-                            {copiandoCPF === 'loading' && <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />}
-                            {copiandoCPF === 'done' && <Check size={16} className="text-green-600" />}
-                          </button>
-                        </div>
-                      )}
-                      <div>
-                        <dt className="text-sm text-neutral-500">Espécie:</dt>
-                        <dd className="font-medium">{row["esp"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Data de Nascimento:</dt>
-                        <dd className="font-medium">{formatDateBR(row["dt_nascimento_tratado"])}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Idade:</dt>
-                        <dd className="font-medium">{row["idade"] || "-"}</dd>
-                      </div>
-                    </dl>
+                {/* Remover a paginação do final */}
+                {/* {gruposClientes.length > 1 && (
+                  <div className="flex justify-center items-center mb-6 gap-2">
+                    ...
                   </div>
-                  {/* Endereço - carrossel (aqui só 1, mas preparado para vários) */}
-                  <div className="bg-white border border-neutral-200 rounded-xl shadow p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold">Endereço</h4>
-                      {/* Setas do carrossel (desabilitadas se só 1) */}
-                      {/* Se quiser adicionar lógica para múltiplos endereços, basta adaptar aqui */}
-                    </div>
-                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                      <div>
-                        <dt className="text-sm text-neutral-500">Endereço:</dt>
-                        <dd className="font-medium">{row["endereco"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Bairro:</dt>
-                        <dd className="font-medium">{row["bairro"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Município:</dt>
-                        <dd className="font-medium">{row["municipio"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">UF:</dt>
-                        <dd className="font-medium">{row["uf"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">CEP:</dt>
-                        <dd className="font-medium">{row["cep"] || "-"}</dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  {/* Informações Bancárias - carrossel (aqui só 1, mas preparado para vários) */}
-                  <div className="bg-white border border-neutral-200 rounded-xl shadow p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold">Informações Bancárias</h4>
-                    </div>
-                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                      <div>
-                        <dt className="text-sm text-neutral-500">Banco Pagamento:</dt>
-                        <dd className="font-medium">{row["id-banco-pagto"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Agência Pagamento:</dt>
-                        <dd className="font-medium">{row["id-agencia-banco"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Conta Corrente:</dt>
-                        <dd className="font-medium">{row["nu-conta-corrente"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Órgão Pagador:</dt>
-                        <dd className="font-medium">{row["id-orgao-pagador"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Meio de Pagamento:</dt>
-                        <dd className="font-medium">{row["cs-meio-pagto"] || "-"}</dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  {/* Informações do Contrato - carrossel (aqui só 1, mas preparado para vários) */}
-                  <div className="bg-white border border-neutral-200 rounded-xl shadow p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold">Informações do Empréstimo</h4>
-                    </div>
-                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                      <div>
-                        <dt className="text-sm text-neutral-500">Banco Empréstimo:</dt>
-                        <dd className="font-medium">{row["id-banco-empres"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Contrato Empréstimo:</dt>
-                        <dd className="font-medium">{row["id-contrato-empres"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Parcelas Pagas:</dt>
-                        <dd className="font-medium">{row["pagas"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Parcelas Restantes:</dt>
-                        <dd className="font-medium">{row["restantes"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Qtd Parcelas:</dt>
-                        <dd className="font-medium">{row["quant_parcelas_tratado"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Data Atualização:</dt>
-                        <dd className="font-medium">{formatDateBR(row["data_update"])}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Valor Benefício:</dt>
-                        <dd className="font-medium">{row["vl_beneficio_tratado"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Valor Parcela:</dt>
-                        <dd className="font-medium">{row["vl_parcela_tratado"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Valor Empréstimo:</dt>
-                        <dd className="font-medium">{row["vl_empres_tratado"] || "-"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Início Desconto:</dt>
-                        <dd className="font-medium">{formatDateBR(row["comp_ini_desconto_tratado"])}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-neutral-500">Fim Desconto:</dt>
-                        <dd className="font-medium">{formatDateBR(row["comp_fim_desconto_tratado"])}</dd>
-                      </div>
-                    </dl>
-                  </div>
-                </motion.div>
-              );
-            } else if (resultData === null) {
-              return null;
-            } else {
-              return <div className="text-center text-neutral-500 py-12">Nenhum dado encontrado ou resposta inesperada da API.</div>;
-            }
+                )} */}
+              </>
+            );
           })()}
         </div>
       </div>
