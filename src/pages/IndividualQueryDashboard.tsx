@@ -88,6 +88,10 @@ const IndividualQueryDashboard: React.FC = () => {
 
   const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
 
+  // Adicionar estado para nome do banco
+  const [nomeBancoDesembolso, setNomeBancoDesembolso] = useState<string>("");
+  const [codigoBancoBuscado, setCodigoBancoBuscado] = useState<string>("");
+
   // Preencher automaticamente CPF e NB vindos da URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -275,6 +279,21 @@ const IndividualQueryDashboard: React.FC = () => {
       }
     };
   }, [pollingIntervalId]);
+
+  // Buscar nome do banco quando pesquisa[0].banco_desembolso mudar
+  useEffect(() => {
+    const cod = pesquisa && pesquisa[0]?.banco_desembolso;
+    if (cod && cod !== codigoBancoBuscado) {
+      setCodigoBancoBuscado(cod);
+      fetch(`https://brasilapi.com.br/api/banks/v1/${cod}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => setNomeBancoDesembolso(d?.name || "-"))
+        .catch(() => setNomeBancoDesembolso("-"));
+    } else if (!cod) {
+      setNomeBancoDesembolso("");
+      setCodigoBancoBuscado("");
+    }
+  }, [pesquisa && pesquisa[0]?.banco_desembolso]);
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
@@ -640,12 +659,12 @@ const IndividualQueryDashboard: React.FC = () => {
                   <h4 className="font-semibold mb-4">Informações Bancárias</h4>
                   <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                     <div>
-                      <dt className="text-sm text-neutral-500">
-                        Banco de Desembolso:
-                      </dt>
-                      <dd className="font-medium">
-                        {pesquisa[0].banco_desembolso || "-"}
-                      </dd>
+                      <dt className="text-sm text-neutral-500">Banco de Desembolso:</dt>
+                      <dd className="font-medium">{pesquisa[0].banco_desembolso || "-"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-neutral-500">Nome do Banco:</dt>
+                      <dd className="font-medium">{nomeBancoDesembolso || "-"}</dd>
                     </div>
                     <div>
                       <dt className="text-sm text-neutral-500">Agência:</dt>
