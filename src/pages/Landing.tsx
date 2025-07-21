@@ -332,6 +332,24 @@ const Landing: React.FC = () => {
               // }
               disabled={false}
             />
+            <QueryOption
+              icon={<Handshake  size={32} className="text-white" />}
+              title={
+                <>
+                  Extração (Maciça){" "}
+                  <br></br>
+                  <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">
+                    Em Desenvolvimento
+                  </span>
+                </>
+              }
+              description="Você já pode consultar nossa base interna da Maciça, especialmente dedicada a clientes para portabilidade."
+              onClick={() => navigate("/dashboard/macica-atualizada")}
+              disabled={
+                !(isAuthenticated && user?.hierarquia === 1)
+              }
+              // disabled={false}
+            />
 
             <QueryOption
               icon={<UserPlus size={32} className="text-white" />}
