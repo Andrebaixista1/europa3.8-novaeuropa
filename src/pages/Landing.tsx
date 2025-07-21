@@ -27,6 +27,7 @@ interface QueryOptionProps {
   disabled?: boolean;
 }
 
+
 // Efeito máquina de escrever rotativo
 const TypewriterRotator: React.FC<{ frases: string[] }> = ({ frases }) => {
   const [index, setIndex] = useState(0);
@@ -136,6 +137,7 @@ const Landing: React.FC = () => {
     }
   };
   const handleSelene = () => {
+
     if (isAuthenticated) {
       navigate("/dashboard/Selene");
     } else {
