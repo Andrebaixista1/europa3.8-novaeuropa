@@ -321,7 +321,7 @@ const Landing: React.FC = () => {
                   Consulta Individual (Maciça){" "}
                   <br></br>
                   <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded">
-                    Beta
+                    Novo
                   </span>
                 </>
               }
