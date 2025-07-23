@@ -17,6 +17,7 @@ import UserRecharge from "./pages/UserRecharge";
 import LuaAIChatPage from "./pages/LuaAIChatPage"
 import ConsultaFGTS from "./pages/ConsultaFGTS";
 import ConsultaIndividualMacica from "./pages/ConsultaIndividualMacica";
+import DownloadMacica from "./pages/DownloadMacica"
 import ConexaoWhats from "./pages/ConexaoWhats";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -89,6 +90,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ConsultaIndividualMacica /> {/* <<< ALTERADO PARA RENDERIZAR UserRecharge */}
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="dashboard/download-macica" // Rota existente que será usada para UserRecharge
+            element={
+              <ProtectedRoute>
+                <DownloadMacica /> {/* <<< ALTERADO PARA RENDERIZAR UserRecharge */}
               </ProtectedRoute>
             }
           />

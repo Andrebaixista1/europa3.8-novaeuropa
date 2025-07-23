@@ -55,9 +55,9 @@ const formatValue = (key: string, val: any) => {
     return isNaN(n)
       ? "-"
       : new Intl.NumberFormat("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-        }).format(n);
+        style: "currency",
+        currency: "BRL",
+      }).format(n);
   }
   if (key === "numero_portabilidades") {
     return val > 0 ? val : "-";
@@ -156,6 +156,9 @@ const IndividualQueryDashboard: React.FC = () => {
 
   const startRespostaPolling = async (userId: number, cpf: string, nb: string) => {
     try {
+
+      // Aguardar 10 segundos antes de chamar a API
+      await new Promise(resolve => setTimeout(resolve, 20000));
       const resposta = await fetch(`${API_BASE}/webhook/api/resposta`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -249,7 +252,7 @@ const IndividualQueryDashboard: React.FC = () => {
       });
 
 
-      
+
       // Não processa resposta, apenas inicia consulta
       setConsultaIniciada(true);
       setAguardandoResposta(true);
@@ -387,9 +390,8 @@ const IndividualQueryDashboard: React.FC = () => {
                       mask="999.999.999-99"
                       value={cpf}
                       onChange={(e) => setCpf(e.target.value)}
-                      className={`europa-input ${
-                        errors.cpf ? "border-error-500" : ""
-                      }`}
+                      className={`europa-input ${errors.cpf ? "border-error-500" : ""
+                        }`}
                       placeholder="000.000.000-00"
                     />
                     {errors.cpf && (
@@ -408,9 +410,8 @@ const IndividualQueryDashboard: React.FC = () => {
                       mask="999.999.999-9"
                       value={nb}
                       onChange={(e) => setNb(e.target.value)}
-                      className={`europa-input ${
-                        errors.nb ? "border-error-500" : ""
-                      }`}
+                      className={`europa-input ${errors.nb ? "border-error-500" : ""
+                        }`}
                       placeholder="000.000.000-0"
                     />
                     {errors.nb && (
@@ -425,14 +426,12 @@ const IndividualQueryDashboard: React.FC = () => {
                       type="button"
                       onClick={() => setIsEnabled(!isEnabled)}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-    focus:ring-2 focus:ring-primary-600 ${
-      isEnabled ? "bg-success-500" : "bg-neutral-300"
-    }`}
+    focus:ring-2 focus:ring-primary-600 ${isEnabled ? "bg-success-500" : "bg-neutral-300"
+                        }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform bg-white rounded-full transition-transform ${
-                          isEnabled ? "translate-x-6" : "translate-x-1"
-                        }`}
+                        className={`inline-block h-4 w-4 transform bg-white rounded-full transition-transform ${isEnabled ? "translate-x-6" : "translate-x-1"
+                          }`}
                       />
                     </button>
                   </div>
@@ -587,13 +586,12 @@ const IndividualQueryDashboard: React.FC = () => {
                         Status do Benefício:
                       </dt>
                       <dd
-                        className={`font-medium ${
-                          translateSituacaoBeneficio(
-                            pesquisa[0].situacao_beneficio
-                          ) === "Elegível"
+                        className={`font-medium ${translateSituacaoBeneficio(
+                          pesquisa[0].situacao_beneficio
+                        ) === "Elegível"
                             ? "text-green-600"
                             : "text-red-600"
-                        }`}
+                          }`}
                       >
                         {translateSituacaoBeneficio(
                           pesquisa[0].situacao_beneficio
@@ -677,7 +675,7 @@ const IndividualQueryDashboard: React.FC = () => {
                       <dd className="font-medium">
                         {" "}
                         {pesquisa[0].conta_desembolso &&
-                        pesquisa[0].conta_desembolso !== "null"
+                          pesquisa[0].conta_desembolso !== "null"
                           ? pesquisa[0].conta_desembolso
                           : "-"}
                       </dd>
@@ -687,7 +685,7 @@ const IndividualQueryDashboard: React.FC = () => {
                       <dd className="font-medium">
                         {" "}
                         {pesquisa[0].digito_desembolso &&
-                        pesquisa[0].digito_desembolso !== "null"
+                          pesquisa[0].digito_desembolso !== "null"
                           ? pesquisa[0].digito_desembolso
                           : "-"}
                       </dd>
@@ -715,7 +713,7 @@ const IndividualQueryDashboard: React.FC = () => {
         </div>
       </footer>
     </div>
-    
+
   );
 };
 

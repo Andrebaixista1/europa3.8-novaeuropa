@@ -12,7 +12,8 @@ import {
   PiggyBank,
   Workflow,
   LogOut,
-  Handshake 
+  Handshake,
+  HardDriveDownload 
 } from "lucide-react";
 import EuropaLogo from "../components/EuropaLogo";
 import Button from "../components/Button";
@@ -333,7 +334,25 @@ const Landing: React.FC = () => {
               disabled={false}
             />
             <QueryOption
-              icon={<Handshake  size={32} className="text-white" />}
+              icon={<HardDriveDownload  size={32} className="text-white" />}
+              title={
+                <>
+                  Vieirachat (Chatwoot){" "}
+                  <br></br>
+                  <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">
+                    Em Desenvolvimento
+                  </span>
+                </>
+              }
+              description="Conecte seu Chatwoot e faça disparos de mensagens e conversas."
+              onClick={() => navigate("/dashboard/vieirachat")}
+              disabled={
+                !(isAuthenticated && user?.hierarquia === 1)
+              }
+              // disabled={false}
+            />
+            <QueryOption
+              icon={<HardDriveDownload  size={32} className="text-white" />}
               title={
                 <>
                   Extração (Maciça){" "}
@@ -344,7 +363,7 @@ const Landing: React.FC = () => {
                 </>
               }
               description="Você já pode consultar nossa base interna da Maciça, especialmente dedicada a clientes para portabilidade."
-              onClick={() => navigate("/dashboard/macica-atualizada")}
+              onClick={() => navigate("/dashboard/download-macica")}
               disabled={
                 !(isAuthenticated && user?.hierarquia === 1)
               }
