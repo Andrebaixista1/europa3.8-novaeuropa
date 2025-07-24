@@ -46,7 +46,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/conexao-whats"
+            path="/dashboard/vieirachat"
             element={
               <ProtectedRoute>
                 <ConexaoWhats />
