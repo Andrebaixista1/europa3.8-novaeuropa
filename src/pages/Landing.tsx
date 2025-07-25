@@ -340,17 +340,17 @@ const Landing: React.FC = () => {
                 <>
                   Vieirachat (Chatwoot){" "}
                   <br></br>
-                  <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded">
-                    Novo
+                  <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">
+                    Em Desenvolvimento
                   </span>
                 </>
               }
               description="Conecte seu Chatwoot e faça disparos de mensagens e conversas armazenadas."
               onClick={() => navigate("/dashboard/vieirachat")}
-              // disabled={
-              //   !(isAuthenticated && user?.hierarquia === 1)
-              // }
-              disabled={false}
+              disabled={
+                !(isAuthenticated && user?.hierarquia === 1)
+              }
+              // disabled={false}
             />
             <QueryOption
               icon={<HardDriveDownload  size={32} className="text-white" />}
