@@ -157,8 +157,8 @@ const IndividualQueryDashboard: React.FC = () => {
   const startRespostaPolling = async (userId: number, cpf: string, nb: string) => {
     try {
 
-      // Aguardar 10 segundos antes de chamar a API
-      await new Promise(resolve => setTimeout(resolve, 20000));
+      // Aguardar 5 segundos antes de chamar a API
+      await new Promise(resolve => setTimeout(resolve, 5000));
       const resposta = await fetch(`${API_BASE}/webhook/api/resposta`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

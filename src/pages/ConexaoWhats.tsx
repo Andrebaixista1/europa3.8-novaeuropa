@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Link as LinkIcon, User as UserIcon } from "lucide-react";
+import { Link as LinkIcon, User as UserIcon, Trash, LogOut } from "lucide-react";
 import InputMask from "react-input-mask";
 import DashboardHeader from "../components/DashboardHeader";
 import Button from "../components/Button";
@@ -493,12 +493,22 @@ const ConexaoWhats: React.FC = () => {
                     {c.dataCadastro}
                   </td>
                   <td className="px-6 py-4 text-sm text-neutral-700">
-                    <button
-                      onClick={() => openDeleteModal(c.id)}
-                      className="text-error-500 hover:underline"
-                    >
-                      Excluir
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {/* ação de desconectar futura */}}
+                        className="text-primary-500 hover:text-primary-700 p-1"
+                        title="Desconectar"
+                      >
+                        <LogOut size={20} />
+                      </button>
+                      <button
+                        onClick={() => openDeleteModal(c.id)}
+                        className="text-error-500 hover:text-error-700 p-1"
+                        title="Excluir"
+                      >
+                        <Trash size={20} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
