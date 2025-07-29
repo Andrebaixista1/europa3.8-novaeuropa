@@ -335,6 +335,24 @@ const Landing: React.FC = () => {
               disabled={false}
             />
             <QueryOption
+              icon={<Handshake  size={32} className="text-white" />}
+              title={
+                <>
+                  Consulta BMG (Cartão){" "}
+                  <br></br>
+                  <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">
+                    Em Desenvolvimento
+                  </span>
+                </>
+              }
+              description="Consulte cartões de crédito da BMG. Limite e margem do cliente agora é possível."
+              onClick={() => navigate("/dashboard/macica-atualizada")}
+              disabled={
+                !(isAuthenticated && user?.hierarquia === 1)
+              }
+              // disabled={false}
+            />
+            <QueryOption
               icon={<ScanQrCode  size={32} className="text-white" />}
               title={
                 <>
