@@ -19,6 +19,7 @@ import ConsultaFGTS from "./pages/ConsultaFGTS";
 import ConsultaIndividualMacica from "./pages/ConsultaIndividualMacica";
 import DownloadMacica from "./pages/DownloadMacica"
 import ConexaoWhats from "./pages/ConexaoWhats";
+import ConsultaBMG from "./pages/ConsultaBMG";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 // ----
@@ -101,6 +102,15 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="dashboard/consulta-bmg" // Rota existente que será usada para UserRecharge
+            element={
+              <ProtectedRoute>
+                <ConsultaBMG /> {/* <<< ALTERADO PARA RENDERIZAR UserRecharge */}
+              </ProtectedRoute>
+            }
+          />
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <ToastContainer position="bottom-right" autoClose={3000} />

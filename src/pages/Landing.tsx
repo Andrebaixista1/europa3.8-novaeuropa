@@ -14,7 +14,8 @@ import {
   LogOut,
   Handshake,
   HardDriveDownload,
-  ScanQrCode  
+  ScanQrCode,
+  CreditCard 
 } from "lucide-react";
 import EuropaLogo from "../components/EuropaLogo";
 import Button from "../components/Button";
@@ -335,7 +336,7 @@ const Landing: React.FC = () => {
               disabled={false}
             />
             <QueryOption
-              icon={<Handshake  size={32} className="text-white" />}
+              icon={<CreditCard size={32} className="text-white" />}
               title={
                 <>
                   Consulta BMG (Cartão){" "}
@@ -346,7 +347,7 @@ const Landing: React.FC = () => {
                 </>
               }
               description="Consulte cartões de crédito da BMG. Limite e margem do cliente agora é possível."
-              onClick={() => navigate("/dashboard/macica-atualizada")}
+              onClick={() => navigate("/dashboard/consulta-bmg")}
               disabled={
                 !(isAuthenticated && user?.hierarquia === 1)
               }

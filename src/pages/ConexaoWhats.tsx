@@ -56,6 +56,7 @@ const ConexaoWhats: React.FC = () => {
   const qrProgressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const qrAttemptStartRef = useRef<number>(0);
 
+
   async function fetchConnections() {
     if (!user) return;
     try {
@@ -275,33 +276,62 @@ const ConexaoWhats: React.FC = () => {
         if (found) {
           setConnectionStatus(found.connectionStatus);
           if (found.connectionStatus === "open") {
-            // Chama chatwoot/set
-            fetch(`https://api.sistemavieira.com.br/chatwoot/set/${encodeURIComponent(instanceName)}`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "apikey": "27ac05090c1275a810400e840f2b6d1d",
-              },
-              body: JSON.stringify({
-                "accountId": "1",
-                "autoCreate": true,
-                "conversationPending": false,
-                "daysLimitImportMessages": 7,
-                "enabled": true,
-                "ignoreJids": [],
-                "importContacts": false,
-                "importMessages": false,
-                "logo": "",
-                "mergeBrazilContacts": false,
-                "nameInbox": instanceName,
-                "organization": "",
-                "reopenConversation": false,
-                "signDelimiter": "\\n",
-                "signMsg": true,
-                "token": "d495fQFtYHNiCAKMFTNSvrbo",
-                "url": "https://chatwoot.sistemavieira.com.br/"
-              })
-            });
+            // Chama chatwoot/set com tentativas
+            const callChatwootAPI = async (attempt: number) => {
+              try {
+                const response = await fetch(`https://api.sistemavieira.com.br/chatwoot/set/${encodeURIComponent(instanceName)}`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "apikey": "27ac05090c1275a810400e840f2b6d1d",
+                  },
+                  body: JSON.stringify({
+                    "accountId": "1",
+                    "autoCreate": true,
+                    "conversationPending": false,
+                    "daysLimitImportMessages": 7,
+                    "enabled": true,
+                    "ignoreJids": [],
+                    "importContacts": false,
+                    "importMessages": false,
+                    "logo": "",
+                    "mergeBrazilContacts": false,
+                    "nameInbox": instanceName,
+                    "organization": "",
+                    "reopenConversation": false,
+                    "signDelimiter": "\\n",
+                    "signMsg": true,
+                    "token": "qEmZZ6oHNj8LjrQsngKCniV3",
+                    "url": "https://chatwoot.sistemavieira.com.br/"
+                  })
+                });
+                
+                if (response.ok) {
+                  console.log(`Chatwoot API tentativa ${attempt} bem-sucedida`);
+                  return true;
+                } else {
+                  console.log(`Chatwoot API tentativa ${attempt} falhou: ${response.status}`);
+                  return false;
+                }
+              } catch (error) {
+                console.log(`Chatwoot API tentativa ${attempt} erro:`, error);
+                return false;
+              }
+            };
+
+            // Executar 3 tentativas com intervalo de 2 segundos
+            let successCount = 0;
+            for (let i = 1; i <= 3; i++) {
+              const success = await callChatwootAPI(i);
+              if (success) successCount++;
+              
+              if (i < 3) {
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Aguarda 2 segundos entre tentativas
+              }
+            }
+            
+            console.log(`Chatwoot API: ${successCount}/3 tentativas bem-sucedidas`);
+            
             clearInterval(pollingRef.current!);
             pollingRef.current = null;
             // Iniciar countdown para fechar modal
