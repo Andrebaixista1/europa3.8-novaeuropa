@@ -63,7 +63,7 @@ const UserRecharge: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/webhook/api/creditos`);
+      const res = await fetch(`${API_BASE}/webhook/api/creditospg`);
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: `Erro HTTP ${res.status}` }));
         throw new Error(errorData.message || `Erro ao buscar dados de recarga: ${res.status}`);
@@ -86,7 +86,7 @@ const UserRecharge: React.FC = () => {
     async function fetchTotalUsers() {
       setIsLoadingUsers(true);
       try {
-        const res = await fetch(`${API_BASE}/webhook/api/usuarios`);
+        const res = await fetch(`${API_BASE}/webhook/api/usuariospg`);
         if (!res.ok) {
           console.error(`Erro HTTP ${res.status} ao buscar total de usuários`);
           setTotalApiUsers(0);

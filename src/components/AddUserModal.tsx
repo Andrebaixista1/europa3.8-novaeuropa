@@ -41,7 +41,7 @@ const AddUserModal: React.FC<Props> = ({ isOpen, onClose, onUserAdded }) => {
     }
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE}/webhook/api/criar`, {
+      const res = await fetch(`${API_BASE}/webhook/api/criarpg`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

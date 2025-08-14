@@ -35,7 +35,7 @@ const CreateLogins: React.FC = () => {
     async function fetchUsuarios() {
       setIsLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/webhook/api/usuarios`);
+        const res = await fetch(`${API_BASE}/webhook/api/usuariospg`);
         if (!res.ok) throw new Error(`Erro ${res.status}`);
         const data: Usuario[] = await res.json();
         setUsuarios(data);

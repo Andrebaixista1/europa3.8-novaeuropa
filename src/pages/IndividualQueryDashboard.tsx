@@ -159,7 +159,7 @@ const IndividualQueryDashboard: React.FC = () => {
 
       // Aguardar 5 segundos antes de chamar a API
       await new Promise(resolve => setTimeout(resolve, 5000));
-      const resposta = await fetch(`${API_BASE}/webhook/api/resposta`, {
+      const resposta = await fetch(`${API_BASE}/webhook/api/respostapg`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: userId, cpf, nb }),
@@ -233,7 +233,7 @@ const IndividualQueryDashboard: React.FC = () => {
     setAguardandoResposta(false);
 
     const base = `${API_BASE}/webhook/api`;
-    const url = isEnabled ? `${base}/consulta2` : `${base}/consultaoff`;
+    const url = isEnabled ? `${base}/consultapg` : `${base}/consultaoff`;
     const payload: any = {
       id: user.id,
       cpf: cpf.replace(/[^\d]/g, ""),

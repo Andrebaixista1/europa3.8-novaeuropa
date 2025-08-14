@@ -323,17 +323,17 @@ const Landing: React.FC = () => {
                 <>
                   Consulta Individual (Maciça){" "}
                   <br></br>
-                  {/* <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded">
-                    Novo
-                  </span> */}
+                  <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
+                    Em Manutenção
+                  </span>
                 </>
               }
               description="Você já pode consultar nossa base interna da Maciça, especialmente dedicada a clientes para portabilidade."
               onClick={() => navigate("/dashboard/macica-atualizada")}
-              // disabled={
-              //   !(isAuthenticated && user?.hierarquia === 1)
-              // }
-              disabled={false}
+              disabled={
+                !(isAuthenticated && user?.hierarquia === 1)
+              }
+              // disabled={false}
             />
             <QueryOption
               icon={<CreditCard size={32} className="text-white" />}

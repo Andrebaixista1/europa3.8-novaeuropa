@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log('[AuthContext] login called with:', { username, password });
     
     try {
-      const response = await fetch(`${API_BASE}/webhook/api/login`, {
+      const response = await fetch(`${API_BASE}/webhook/api/loginpg`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ login: username, senha: password }),

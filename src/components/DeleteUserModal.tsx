@@ -31,7 +31,7 @@ const DeleteUserModal: React.FC<Props> = ({ isOpen, onClose, onUserDeleted }) =>
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
-    fetch(`${API_BASE}/webhook/api/usuarios`)
+    fetch(`${API_BASE}/webhook/api/usuariospg`)
       .then(res => res.json())
       .then((data: Usuario[]) => {
         const unique = Array.from(new Map(data.map(u => [u.login, u])).values());
@@ -48,7 +48,7 @@ const DeleteUserModal: React.FC<Props> = ({ isOpen, onClose, onUserDeleted }) =>
     if (!selectedUser) return;
     setDeleting(true);
     try {
-      const res = await fetch(`${API_BASE}/webhook/api/excluir`, {
+      const res = await fetch(`${API_BASE}/webhook/api/excluirpg`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: selectedUser.id, login: selectedUser.login }),

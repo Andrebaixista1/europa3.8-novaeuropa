@@ -34,7 +34,7 @@ const AddRechargeModal: React.FC<Props> = ({ isOpen, onClose, onRechargeAdded })
     setLoading(true);
     // Ajustado para ser igual ao DeleteUserModal (pasted_content_2.txt)
     // Se API_BASE já tem "/", resultará em "//webhook..."
-    fetch(`${API_BASE}/webhook/api/usuarios`) 
+    fetch(`${API_BASE}/webhook/api/usuariospg`) 
       .then(res => {
         if (!res.ok) {
           throw new Error(`Erro HTTP ${res.status} ao buscar usuários`);
@@ -60,7 +60,7 @@ const AddRechargeModal: React.FC<Props> = ({ isOpen, onClose, onRechargeAdded })
     setAdding(true);
     try {
       // Mantendo a URL original para carregar-saldo, que parecia correta (API_BASE + webhook...)
-      const res = await fetch(`${API_BASE}/webhook/api/carregar-saldo`, {
+      const res = await fetch(`${API_BASE}/webhook/api/carregar-saldopg`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

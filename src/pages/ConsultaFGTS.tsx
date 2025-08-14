@@ -126,7 +126,7 @@ const ConsultaFGTS: React.FC = () => {
       cpf: cpf.replace(/\D/g, ""),
       limite_disponivel: (accountLimits?.available_limit ?? 0).toString(),
     };
-    const endpoint = isEnabled ? '/api/consulta-fgts-online' : '/api/consulta-fgts-offline';
+    const endpoint = isEnabled ? '/api/consulta-fgts-onlinepg' : '/api/consulta-fgts-offlinepg';
 
     try {
       const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -136,8 +136,30 @@ const ConsultaFGTS: React.FC = () => {
       });
       if (!res.ok) throw new Error();
       const json = await res.json();
-      setResultData(json); // <--- usar o objeto inteiro
-      toast.success("Consulta realizada com sucesso!", { autoClose: 3000 });
+      
+      // Debug: log da resposta da API
+      console.log("Resposta da API:", json);
+      console.log("Tipo da resposta:", typeof json);
+      console.log("Chaves da resposta:", Object.keys(json || {}));
+      
+      // Verificar se a resposta tem a estrutura esperada
+      if (json && json.data && Array.isArray(json.data) && json.data.length > 0) {
+        // A API retorna { data: [...] }, então pegamos o primeiro item
+        console.log("Usando json.data[0]:", json.data[0]);
+        setResultData(json.data[0]);
+        toast.success("Consulta realizada com sucesso!", { autoClose: 3000 });
+      } else if (json && json.nomeCliente) {
+        // A API retorna diretamente o objeto FGTS
+        console.log("Usando json diretamente:", json);
+        setResultData(json);
+        toast.success("Consulta realizada com sucesso!", { autoClose: 3000 });
+      } else {
+        // Estrutura inesperada
+        console.error("Estrutura de resposta inesperada:", json);
+        toast.error("Formato de resposta inesperado da API", { autoClose: 3000 });
+        setResultData(null);
+      }
+      
       await fetchUserBalance();
     } catch {
       toast.error("Erro ao processar a solicitação", { autoClose: 3000 });

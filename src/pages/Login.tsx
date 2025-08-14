@@ -95,7 +95,7 @@ const Login: React.FC = () => {
     }
     try {
       const res = await fetch(
-        `${API_BASE}/webhook/api/alterar`,
+        `https://n8n.sistemavieira.com.br/webhook/api/alterarpg`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

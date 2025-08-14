@@ -177,8 +177,8 @@ const ConexaoWhats: React.FC = () => {
   async function confirmDelete() {
     if (!user || deleteTargetId === null) return;
     try {
-      const res = await fetch(`${N8N_WS_BASE}/api/excluir-conexoes`, {
-      // const res = await fetch(`https://n8n.sistemavieira.com.br/webhook-test/api/excluir-conexoes`, {
+      const res = await fetch(`${N8N_WS_BASE}/api/excluirpg-conexoes`, {
+      // const res = await fetch(`https://n8n.sistemavieira.com.br/webhook-test/api/excluirpg-conexoes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
