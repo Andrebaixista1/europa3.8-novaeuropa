@@ -347,10 +347,10 @@ const Landing: React.FC = () => {
               }
               description="Conecte seu Chatwoot e faça disparos de mensagens e conversas armazenadas."
               onClick={() => navigate("/dashboard/vieirachat")}
-              disabled={
-                !(isAuthenticated && user?.hierarquia === 1)
-              }
-              // disabled={false}
+              // disabled={
+              //   !(isAuthenticated && user?.hierarquia === 1)
+              // }
+              disabled={true}
             />
             <QueryOption
               icon={<HardDriveDownload  size={32} className="text-white" />}

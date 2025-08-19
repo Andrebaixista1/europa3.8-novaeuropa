@@ -44,7 +44,7 @@ type FilterPayload = {
   dibInicio: string;
   dibFim: string;
   nome?: string;
-  linhasLimite?: number;
+
 };
 
 type HistoricoItem = {
@@ -316,7 +316,7 @@ const DownloadMacica: React.FC = () => {
   const [especieInput, setEspecieInput] = useState("");
   const [dibInicio, setDibInicio] = useState("");
   const [dibFim, setDibFim] = useState("");
-  const [linhasLimite, setLinhasLimite] = useState<number>(10000);
+
   const [isLoading, setIsLoading] = useState(false);
   const [bancos, setBancos] = useState<{ codigo: string; nome: string }[]>([]);
   const [isLoadingBancos, setIsLoadingBancos] = useState(false);
@@ -591,8 +591,7 @@ const DownloadMacica: React.FC = () => {
       especies,
       dibInicio,
       dibFim,
-      // auxiliar para backend caso queira usar
-      linhasLimite,
+
     };
     // Cria a linha de loading imediatamente
     const name = generateFilterName(payload);
@@ -796,26 +795,6 @@ const DownloadMacica: React.FC = () => {
             </div>
           </div>
           {/* Botões Limpar e Filtrar */}
-          {/* Limite de linhas */}
-          <div className="mt-4">
-            <label className="text-xs font-medium">Limite de linhas</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min={1}
-                step={1}
-                value={linhasLimite}
-                onChange={e => setLinhasLimite(Math.max(1, Number(e.target.value || 0)))}
-                className="europa-input w-[160px]"
-              />
-              {linhasLimite > 10000 && (
-                <span className="text-[11px] text-red-600">
-                  Aumentar o limite pode elevar o tempo de processamento e a espera para geração/entrega do arquivo.
-                </span>
-              )}
-            </div>
-          </div>
-
           <div className="flex justify-between mt-4 gap-2">
             <button type="button" onClick={limparFiltros} className="px-4 py-2 rounded-lg border border-neutral-300 text-neutral-600 font-semibold hover:bg-neutral-100 transition">Limpar</button>
             <button type="button" onClick={filtrar} disabled={isLoading} className="px-4 py-2 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700 transition disabled:opacity-60 disabled:cursor-not-allowed">
