@@ -366,7 +366,7 @@ const Landing: React.FC = () => {
               description="Você já pode consultar nossa base interna da Maciça, especialmente dedicada a clientes para portabilidade."
               onClick={() => navigate("/dashboard/download-macica")}
               disabled={
-                !(isAuthenticated && user?.hierarquia === 1 || user?.hierarquia === 3)
+                !(isAuthenticated && user?.hierarquia === 1)
               }
               // disabled={false}
             />

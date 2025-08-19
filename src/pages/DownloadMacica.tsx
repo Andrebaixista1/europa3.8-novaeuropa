@@ -3,8 +3,7 @@ import DashboardHeader from "../components/DashboardHeader";
 import { useAuth } from "../context/AuthContext";
 import { Eye, Download as DownloadIcon, X, Loader2 } from "lucide-react";
 
-// Evita chamadas duplicadas do histórico em StrictMode (dev)
-let DID_LOAD_HIST_ONCE = false;
+// Variável não mais necessária - removida
 
 // Tipos auxiliares para normalizar a resposta da API de bancos
 type BancoApiItem = {
@@ -112,7 +111,9 @@ type SavedPayload = {
 
 function parseQueryPayload(input: unknown): SavedPayload {
   if (!input) return {};
+  console.log("parseQueryPayload input:", input);
   const payload = typeof input === 'string' ? (() => { try { return JSON.parse(input as string); } catch { return {}; } })() : input;
+  console.log("parseQueryPayload parsed:", payload);
   const query = (payload as { query?: string })?.query;
   if (!query || typeof query !== 'string') return (payload as SavedPayload) || {};
 
@@ -362,13 +363,14 @@ const DownloadMacica: React.FC = () => {
     return isNaN(Number(num)) ? "" : Number(num).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   }
 
-  // Carregar histórico do servidor ao abrir a página e quando o usuário mudar
+  // Carregar histórico do servidor sempre que a página for acessada
   useEffect(() => {
     async function loadHistoricoFromServer() {
-      // Evitar chamadas duplicadas somente no ciclo atual de montagem
-      if (DID_LOAD_HIST_ONCE) return;
-      DID_LOAD_HIST_ONCE = true;
-
+      // Rolar para o topo quando a página for aberta
+      if (typeof window !== "undefined" && typeof window.scrollTo === "function") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      
       setIsLoadingHistorico(true);
       try {
         const listRes = await fetch("https://n8n.sistemavieira.com.br/webhook/api/filtros-salvos", {
@@ -378,9 +380,11 @@ const DownloadMacica: React.FC = () => {
         });
         if (!listRes.ok) throw new Error(`POST lista filtros: ${listRes.status}`);
         const listJson: SavedFilterList = await listRes.json();
+        console.log("Resposta da API (filtros-salvos):", listJson);
         const items: SavedFilterItem[] = Array.isArray(listJson)
           ? listJson as SavedFilterItem[]
           : (listJson?.data ?? []);
+        console.log("Items processados:", items);
         const cleaned: HistoricoItem[] = items
           .filter(detJson => Boolean(detJson?.id ?? detJson?.filterId ?? detJson?.mailing_id))
           .filter(detJson => typeof (detJson?.nome ?? detJson?.name) === 'string' && String(detJson?.nome ?? detJson?.name).trim().length > 0)
@@ -389,15 +393,20 @@ const DownloadMacica: React.FC = () => {
             const name = String(detJson?.nome ?? detJson?.name);
             const rowsCount = Number(detJson?.rows_count ?? detJson?.linhas ?? detJson?.count ?? detJson?.rowsCount ?? 0) || 0;
             const createdAt = detJson?.created_at ?? detJson?.createdAt ?? new Date().toISOString();
+            const payload = detJson?.payload;
+            // Loading ativo se rows_count = 0 OU se payload = null (indicando processamento)
+            // Mas NÃO se payload contém status "concluido" (parar de carregar)
+            const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload || '');
+            const isLoading = (rowsCount === 0 || payload === null) && !payloadStr.includes('"status":"concluido"');
             const item: HistoricoItem = {
               id: `srv-${serverId}`,
               createdAt,
               name,
               rowsCount,
               mailingId: serverId,
-              payload: parseQueryPayload(detJson?.payload),
+              payload: parseQueryPayload(payload),
               isFromServer: true,
-              isLoading: rowsCount === 0,
+              isLoading,
             };
             return item;
           });
@@ -425,9 +434,11 @@ const DownloadMacica: React.FC = () => {
       });
       if (!listRes.ok) return;
       const listJson: SavedFilterList = await listRes.json();
+      console.log("Refresh histórico - Resposta da API:", listJson);
       const items: SavedFilterItem[] = Array.isArray(listJson)
         ? listJson as SavedFilterItem[]
         : (listJson?.data ?? []);
+      console.log("Refresh histórico - Items processados:", items);
       const cleaned: HistoricoItem[] = items
         .filter(detJson => Boolean(detJson?.id ?? detJson?.filterId ?? detJson?.mailing_id))
         .filter(detJson => typeof (detJson?.nome ?? detJson?.name) === 'string' && String(detJson?.nome ?? detJson?.name).trim().length > 0)
@@ -436,15 +447,20 @@ const DownloadMacica: React.FC = () => {
           const name = String(detJson?.nome ?? detJson?.name);
           const rowsCount = Number(detJson?.rows_count ?? detJson?.linhas ?? detJson?.count ?? detJson?.rowsCount ?? 0) || 0;
           const createdAt = detJson?.created_at ?? detJson?.createdAt ?? new Date().toISOString();
+          const payload = detJson?.payload;
+          // Loading ativo se rows_count = 0 OU se payload = null (indicando processamento)
+          // Mas NÃO se payload contém status "concluido" (parar de carregar)
+          const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload || '');
+          const isLoading = (rowsCount === 0 || payload === null) && !payloadStr.includes('"status":"concluido"');
           return {
             id: `srv-${serverId}`,
             createdAt,
             name,
             rowsCount,
             mailingId: serverId,
-            payload: parseQueryPayload(detJson?.payload),
+            payload: parseQueryPayload(payload),
             isFromServer: true,
-            isLoading: rowsCount === 0,
+            isLoading,
           } as HistoricoItem;
         });
       cleaned.sort((a, b) => (new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
@@ -576,7 +592,6 @@ const DownloadMacica: React.FC = () => {
       dibInicio,
       dibFim,
       // auxiliar para backend caso queira usar
-      // @ts-expect-error adicionar campo livre
       linhasLimite,
     };
     // Cria a linha de loading imediatamente
@@ -845,12 +860,22 @@ const DownloadMacica: React.FC = () => {
                     <td className="py-2 pr-3 align-top">{item.mailingId ?? '-'}</td>
                     <td className="py-2 pr-3 align-top">
                       {item.isLoading ? (
-                        <div className="w-28 h-2 bg-neutral-200 rounded overflow-hidden relative">
-                          <div className="absolute left-0 top-0 h-2 w-1/3 bg-primary-600" style={{ animation: 'progressLoop 1.2s linear infinite' }} />
+                        <div className="flex items-center gap-2">
+                          <div className="w-28 h-2 bg-neutral-200 rounded overflow-hidden relative">
+                            <div className="absolute left-0 top-0 h-2 w-1/3 bg-primary-600" style={{ animation: 'progressLoop 1.2s linear infinite' }} />
+                          </div>
+                          <span className="text-xs text-neutral-500">
+                            {item.payload === null ? 'Processando...' : 'Aguardando...'}
+                          </span>
                         </div>
-                      ) : (
-                        item.rowsCount
-                      )}
+                      ) : (() => {
+                        const payloadStr = typeof item.payload === 'string' ? item.payload : JSON.stringify(item.payload || '');
+                        return payloadStr.includes('"status":"concluido"') ? (
+                          <span className="text-green-600 font-medium">0 (Concluído)</span>
+                        ) : (
+                          item.rowsCount
+                        );
+                      })()}
                     </td>
                     <td className="py-2 pr-3 align-top">
                       <div className="flex items-center gap-3">
@@ -884,37 +909,53 @@ const DownloadMacica: React.FC = () => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="border rounded-lg">
-                  <div className="px-3 py-2 font-medium bg-neutral-50 border-b">Faixas</div>
-                  <div className="p-3 space-y-2">
-                    <div className="flex justify-between"><span>Idade</span><span>{(modalItem.payload as SavedPayload)?.idadeMin} a {(modalItem.payload as SavedPayload)?.idadeMax}</span></div>
-                    <div className="flex justify-between"><span>Prazo</span><span>{(modalItem.payload as SavedPayload)?.prazoMin} a {(modalItem.payload as SavedPayload)?.prazoMax}</span></div>
-                    <div className="flex justify-between"><span>Restantes</span><span>{(modalItem.payload as SavedPayload)?.restantesMin} a {(modalItem.payload as SavedPayload)?.restantesMax}</span></div>
-                    <div className="flex justify-between"><span>Pagas</span><span>{(modalItem.payload as SavedPayload)?.pagasMin} a {(modalItem.payload as SavedPayload)?.pagasMax}</span></div>
-                    <div className="flex justify-between"><span>Valor Empréstimo</span><span>{(modalItem.payload as SavedPayload)?.valorEmprestimoMin ?? '-'} a {(modalItem.payload as SavedPayload)?.valorEmprestimoMax ?? '-'}</span></div>
-                    <div className="flex justify-between"><span>Valor Parcela</span><span>{(modalItem.payload as SavedPayload)?.valorParcelaMin ?? '-'} a {(modalItem.payload as SavedPayload)?.valorParcelaMax ?? '-'}</span></div>
-                  </div>
-                </div>
-                <div className="border rounded-lg">
-                  <div className="px-3 py-2 font-medium bg-neutral-50 border-b">Datas</div>
-                  <div className="p-3 space-y-2">
-                    <div className="flex justify-between"><span>Início Desconto</span><span>{(modalItem.payload as SavedPayload)?.inicioDesconto || '-'}</span></div>
-                    <div className="flex justify-between"><span>Fim Desconto</span><span>{(modalItem.payload as SavedPayload)?.fimDesconto || '-'}</span></div>
-                    <div className="flex justify-between"><span>Nascimento</span><span>{(modalItem.payload as SavedPayload)?.nascimentoInicio || '-'} a {(modalItem.payload as SavedPayload)?.nascimentoFim || '-'}</span></div>
-                    <div className="flex justify-between"><span>Atualização</span><span>{(modalItem.payload as SavedPayload)?.atualizacaoInicio || '-'} a {(modalItem.payload as SavedPayload)?.atualizacaoFim || '-'}</span></div>
-                    <div className="flex justify-between"><span>DIB</span><span>{(modalItem.payload as SavedPayload)?.dibInicio || '-'} a {(modalItem.payload as SavedPayload)?.dibFim || '-'}</span></div>
-                  </div>
-                </div>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                {(() => {
+                  const payloadStr = typeof modalItem.payload === 'string' ? modalItem.payload : JSON.stringify(modalItem.payload || '');
+                  if (payloadStr.includes('"status":"concluido"')) {
+                    return (
+                      <div className="col-span-2 text-center py-8">
+                        <div className="text-green-600 text-lg font-medium mb-2">Processamento Concluído</div>
+                        <p className="text-neutral-600">Este filtro foi processado com sucesso e está disponível para download.</p>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <>
+                      <div className="border rounded-lg">
+                        <div className="px-3 py-2 font-medium bg-neutral-50 border-b">Faixas</div>
+                        <div className="p-3 space-y-2">
+                          <div className="flex justify-between"><span>Idade</span><span>{(modalItem.payload as SavedPayload)?.idadeMin} a {(modalItem.payload as SavedPayload)?.idadeMax}</span></div>
+                          <div className="flex justify-between"><span>Prazo</span><span>{(modalItem.payload as SavedPayload)?.prazoMin} a {(modalItem.payload as SavedPayload)?.prazoMax}</span></div>
+                          <div className="flex justify-between"><span>Restantes</span><span>{(modalItem.payload as SavedPayload)?.restantesMin} a {(modalItem.payload as SavedPayload)?.restantesMax}</span></div>
+                          <div className="flex justify-between"><span>Pagas</span><span>{(modalItem.payload as SavedPayload)?.pagasMin} a {(modalItem.payload as SavedPayload)?.pagasMax}</span></div>
+                          <div className="flex justify-between"><span>Valor Empréstimo</span><span>{(modalItem.payload as SavedPayload)?.valorEmprestimoMin ?? '-'} a {(modalItem.payload as SavedPayload)?.valorEmprestimoMax ?? '-'}</span></div>
+                          <div className="flex justify-between"><span>Valor Parcela</span><span>{(modalItem.payload as SavedPayload)?.valorParcelaMin ?? '-'} a {(modalItem.payload as SavedPayload)?.valorParcelaMax ?? '-'}</span></div>
+                        </div>
+                      </div>
+                      <div className="border rounded-lg">
+                        <div className="px-3 py-2 font-medium bg-neutral-50 border-b">Datas</div>
+                        <div className="p-3 space-y-2">
+                          <div className="flex justify-between"><span>Início Desconto</span><span>{(modalItem.payload as SavedPayload)?.inicioDesconto || '-'}</span></div>
+                          <div className="flex justify-between"><span>Fim Desconto</span><span>{(modalItem.payload as SavedPayload)?.fimDesconto || '-'}</span></div>
+                          <div className="flex justify-between"><span>Nascimento</span><span>{(modalItem.payload as SavedPayload)?.nascimentoInicio || '-'} a {(modalItem.payload as SavedPayload)?.nascimentoFim || '-'}</span></div>
+                          <div className="flex justify-between"><span>Atualização</span><span>{(modalItem.payload as SavedPayload)?.atualizacaoInicio || '-'} a {(modalItem.payload as SavedPayload)?.atualizacaoFim || '-'}</span></div>
+                          <div className="flex justify-between"><span>DIB</span><span>{(modalItem.payload as SavedPayload)?.dibInicio || '-'} a {(modalItem.payload as SavedPayload)?.dibFim || '-'}</span></div>
+                        </div>
+                      </div>
 
-                <div className="border rounded-lg col-span-2">
-                  <div className="px-3 py-2 font-medium bg-neutral-50 border-b">Bancos e Outros</div>
-                  <div className="p-3 space-y-2">
-                    <div><span className="font-medium">Bancos Pagadores: </span>{(((modalItem.payload as SavedPayload)?.bancoPagamento) || []).join(', ') || '-'}</div>
-                    <div><span className="font-medium">Bancos Empréstimo: </span>{(((modalItem.payload as SavedPayload)?.bancoEmprestimo) || []).join(', ') || '-'}</div>
-                    <div><span className="font-medium">Espécies: </span>{(((modalItem.payload as SavedPayload)?.especies) || []).join(', ') || '-'}</div>
-                  </div>
-                </div>
+                      <div className="border rounded-lg col-span-2">
+                        <div className="px-3 py-2 font-medium bg-neutral-50 border-b">Bancos e Outros</div>
+                        <div className="p-3 space-y-2">
+                          <div><span className="font-medium">Bancos Pagadores: </span>{(((modalItem.payload as SavedPayload)?.bancoPagamento) || []).join(', ') || '-'}</div>
+                          <div><span className="font-medium">Bancos Empréstimo: </span>{(((modalItem.payload as SavedPayload)?.bancoEmprestimo) || []).join(', ') || '-'}</div>
+                          <div><span className="font-medium">Espécies: </span>{(((modalItem.payload as SavedPayload)?.especies) || []).join(', ') || '-'}</div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>
