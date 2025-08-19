@@ -358,8 +358,8 @@ const Landing: React.FC = () => {
                 <>
                   Extração (Maciça){" "}
                   <br></br>
-                  <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">
-                    Em Desenvolvimento
+                  <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded">
+                    Beta
                   </span>
                 </>
               }
