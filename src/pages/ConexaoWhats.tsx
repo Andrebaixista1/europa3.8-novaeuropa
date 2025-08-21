@@ -142,7 +142,7 @@ const ConexaoWhats: React.FC = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "apikey": "27ac05090c1275a810400e840f2b6d1d",
+          "apikey": "qEmZZ6oHNj8LjrQsngKCniV3",
         },
         body: JSON.stringify(payload),
       });
@@ -231,7 +231,7 @@ const ConexaoWhats: React.FC = () => {
               try {
                 const res = await fetch(`https://api.sistemavieira.com.br/instance/connect/${encodeURIComponent(instanceName)}?number=${form.numero.replace(/\D/g, "")}`, {
                   method: "GET",
-                  headers: { "apikey": "27ac05090c1275a810400e840f2b6d1d" }
+                  headers: { "apikey": "qEmZZ6oHNj8LjrQsngKCniV3" }
                 });
                 if (res.ok) {
                   const json = await res.json();
@@ -264,7 +264,7 @@ const ConexaoWhats: React.FC = () => {
         const res = await fetch(`https://api.sistemavieira.com.br/instance/fetchInstances?instanceName=${encodeURIComponent(instanceName)}`, {
           method: "GET",
           headers: {
-            "apikey": "27ac05090c1275a810400e840f2b6d1d"
+            "apikey": "qEmZZ6oHNj8LjrQsngKCniV3"
           }
         });
         if (!res.ok) return;
@@ -280,7 +280,7 @@ const ConexaoWhats: React.FC = () => {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "apikey": "27ac05090c1275a810400e840f2b6d1d",
+                "apikey": "qEmZZ6oHNj8LjrQsngKCniV3",
               },
               body: JSON.stringify({
                 "accountId": "1",
