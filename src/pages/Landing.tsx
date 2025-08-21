@@ -11,10 +11,11 @@ import {
   Landmark,
   PiggyBank,
   Workflow,
+  ScanQrCode,
   LogOut,
   Handshake,
   HardDriveDownload,
-  ScanQrCode  
+  Users  
 } from "lucide-react";
 import EuropaLogo from "../components/EuropaLogo";
 import Button from "../components/Button";
@@ -335,6 +336,24 @@ const Landing: React.FC = () => {
               disabled={false}
             />
             <QueryOption
+              icon={<Users  size={32} className="text-white" />}
+              title={
+                <>
+                  Chamados Planejamento{" "}
+                  <br></br>
+                  <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">
+                    Em Desenvolvimento
+                  </span>
+                </>
+              }
+              description="Abra chamados para solicitar suporte, acompanhe o status das suas demandas e receba atendimento prioritário."
+              onClick={() => navigate("/dashboard/chamados")}
+              disabled={
+                !(isAuthenticated && user?.hierarquia === 1 || user?.hierarquia === 2)
+              }
+              // disabled={true}
+            />
+            <QueryOption
               icon={<ScanQrCode  size={32} className="text-white" />}
               title={
                 <>
@@ -347,10 +366,10 @@ const Landing: React.FC = () => {
               }
               description="Conecte seu Chatwoot e faça disparos de mensagens e conversas armazenadas."
               onClick={() => navigate("/dashboard/vieirachat")}
-              // disabled={
-              //   !(isAuthenticated && user?.hierarquia === 1)
-              // }
-              disabled={true}
+              disabled={
+                !(isAuthenticated && user?.hierarquia === 1)
+              }
+              // disabled={true}
             />
             <QueryOption
               icon={<HardDriveDownload  size={32} className="text-white" />}
@@ -402,9 +421,10 @@ const Landing: React.FC = () => {
               }
               description="Faça consultas em lote para múltiplos cadastros de uma só vez."
               onClick={handleBatchQuery}
-              disabled={
-                !(isAuthenticated && user?.hierarquia === 1)
-              }
+              // disabled={
+              //   !(isAuthenticated && user?.hierarquia === 1)
+              // }
+              disabled={true}
             />
           </motion.div>
         </motion.div>

@@ -19,6 +19,7 @@ import ConsultaFGTS from "./pages/ConsultaFGTS";
 import ConsultaIndividualMacica from "./pages/ConsultaIndividualMacica";
 import DownloadMacica from "./pages/DownloadMacica"
 import ConexaoWhats from "./pages/ConexaoWhats";
+import ChamadosPlane from "./pages/ChamadosPlane.tsx";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 // ----
@@ -98,6 +99,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <DownloadMacica /> {/* <<< ALTERADO PARA RENDERIZAR UserRecharge */}
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/chamados" // Rota existente que será usada para UserRecharge
+            element={
+              <ProtectedRoute>
+                <ChamadosPlane /> {/* <<< ALTERADO PARA RENDERIZAR UserRecharge */}
               </ProtectedRoute>
             }
           />
