@@ -339,15 +339,15 @@ const Landing: React.FC = () => {
               icon={<Users  size={32} className="text-white" />}
               title={
                 <>
-                  Chamados Planejamento{" "}
+                  Controle Planejamento{" "}
                   <br></br>
                   <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">
                     Em Desenvolvimento
                   </span>
                 </>
               }
-              description="Abra chamados para solicitar suporte, acompanhe o status das suas demandas e receba atendimento prioritário."
-              onClick={() => navigate("/dashboard/chamados")}
+              description="Controle de usuarios, logins e senhas ."
+              onClick={() => navigate("/dashboard/controlusers")}
               disabled={
                 !(isAuthenticated && user?.hierarquia === 1 || user?.hierarquia === 2)
               }
