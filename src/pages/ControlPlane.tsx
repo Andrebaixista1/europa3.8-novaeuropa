@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Users, UserCheck, UserX, Clock, RotateCcw, UserMinus, ChevronLeft, ChevronRight, Search, Filter, ChevronUp, ChevronDown, Download, Plus, X } from "lucide-react";
+import { Users, UserCheck, UserX, Clock, RotateCcw, UserMinus, ChevronLeft, ChevronRight, Search, Filter, ChevronUp, ChevronDown, Download, Plus, X, RefreshCw } from "lucide-react";
 import { saveAs } from 'file-saver';
 import { toast } from 'react-toastify';
 import DashboardHeader from "../components/DashboardHeader";
@@ -11,6 +11,7 @@ interface Usuario {
   agencia: string;
   login: string;
   nome: string; // This will actually hold empresa data from API
+  grupo: string; // Group information from API
   dataRenovacao: string;
   dataVencimento: string;
   status: 'ativo' | 'inativo' | 'aguardando';
@@ -42,6 +43,7 @@ type SortDirection = 'asc' | 'desc';
 
 interface Filtros {
   busca: string;
+  grupo: string;
   status: string;
   dataRenovacaoInicial: string;
   dataRenovacaoFinal: string;
@@ -73,6 +75,7 @@ const ControlPlane: React.FC = () => {
   const [cachedVanguardData, setCachedVanguardData] = useState<Usuario[] | null>(null);
   const [filtros, setFiltros] = useState<Filtros>({
     busca: '',
+    grupo: '',
     status: '',
     dataRenovacaoInicial: '',
     dataRenovacaoFinal: '',
@@ -134,6 +137,7 @@ const ControlPlane: React.FC = () => {
         agencia: item.codigo.toString(),
         login: item.login,
         nome: item.empresa, // Map empresa to nome field
+        grupo: item.grupo, // Map grupo field
         dataRenovacao: item.renovacao || new Date().toISOString().split('T')[0], // Use today if null
         dataVencimento: item.vencimento || new Date().toISOString().split('T')[0], // Use today if null
         status: 'ativo' // Will be calculated by getStatusDisplay
@@ -166,6 +170,7 @@ const ControlPlane: React.FC = () => {
       agencia: '2001',
       login: 'admin.rvx',
       nome: 'Administrador RVX',
+      grupo: 'RVX',
       dataRenovacao: '2024-11-25',
       dataVencimento: '2024-12-25',
       status: 'ativo'
@@ -175,6 +180,7 @@ const ControlPlane: React.FC = () => {
       agencia: '2002',
       login: 'operador.rvx',
       nome: 'Operador RVX',
+      grupo: 'RVX',
       dataRenovacao: '2024-12-28',
       dataVencimento: '2025-01-03',
       status: 'aguardando'
@@ -184,6 +190,7 @@ const ControlPlane: React.FC = () => {
       agencia: '2003',
       login: 'supervisor.rvx',
       nome: 'Supervisor RVX',
+      grupo: 'RVX',
       dataRenovacao: '2024-10-15',
       dataVencimento: '2024-11-15',
       status: 'inativo'
@@ -196,6 +203,7 @@ const ControlPlane: React.FC = () => {
       agencia: '3001',
       login: 'gestor.corban',
       nome: 'Gestor New Corban',
+      grupo: 'NEW CORBAN',
       dataRenovacao: '2024-12-10',
       dataVencimento: '2025-01-10',
       status: 'ativo'
@@ -205,6 +213,7 @@ const ControlPlane: React.FC = () => {
       agencia: '3002',
       login: 'analista.corban',
       nome: 'Analista New Corban',
+      grupo: 'NEW CORBAN',
       dataRenovacao: '2024-12-29',
       dataVencimento: '2025-01-01',
       status: 'aguardando'
@@ -214,6 +223,7 @@ const ControlPlane: React.FC = () => {
       agencia: '3003',
       login: 'operador.corban',
       nome: 'Operador New Corban',
+      grupo: 'NEW CORBAN',
       dataRenovacao: '2024-09-20',
       dataVencimento: '2024-10-20',
       status: 'inativo'
@@ -223,6 +233,7 @@ const ControlPlane: React.FC = () => {
       agencia: '3004',
       login: 'coordenador.corban',
       nome: 'Coordenador New Corban',
+      grupo: 'NEW CORBAN',
       dataRenovacao: '2024-12-15',
       dataVencimento: '2025-01-15',
       status: 'ativo'
@@ -244,12 +255,6 @@ const ControlPlane: React.FC = () => {
           usuarios: vanguardUsers
         },
         {
-          id: 'rvx',
-          nome: 'RVX',
-          descricao: 'Sistema de Gestão Operacional',
-          usuarios: rvxUsers
-        },
-        {
           id: 'newcorban',
           nome: 'New Corban',
           descricao: 'Sistema de Correspondente Bancário',
@@ -269,6 +274,16 @@ const ControlPlane: React.FC = () => {
 
   // Get status color and text with new logic
   const getStatusDisplay = (usuario: Usuario) => {
+    // Grupos especiais sempre têm status Ativo
+    const gruposEspeciais = ['matriz', 'parceiros', 'parceiro', 'socio'];
+    if (usuario.grupo && gruposEspeciais.includes(usuario.grupo.toLowerCase())) {
+      return {
+        status: 'ativo',
+        text: 'Ativo',
+        color: 'bg-green-100 text-green-800'
+      };
+    }
+    
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
     
@@ -328,6 +343,11 @@ const ControlPlane: React.FC = () => {
         usuario.nome.toLowerCase().includes(filtros.busca.toLowerCase()) ||
         usuario.agencia.toLowerCase().includes(filtros.busca.toLowerCase())
       );
+    }
+
+    // Apply group filter
+    if (filtros.grupo) {
+      filtrados = filtrados.filter(usuario => usuario.grupo === filtros.grupo);
     }
 
     // Apply status filter
@@ -398,6 +418,7 @@ const ControlPlane: React.FC = () => {
   useEffect(() => {
     setFiltros({
       busca: '',
+      grupo: '',
       status: '',
       dataRenovacaoInicial: '',
       dataRenovacaoFinal: '',
@@ -536,6 +557,7 @@ const ControlPlane: React.FC = () => {
       'Agência', 
       'Login',
       'Empresa',
+      'Grupo',
       'Data Renovação',
       'Data Vencimento', 
       'Status'
@@ -549,6 +571,7 @@ const ControlPlane: React.FC = () => {
         usuario.agencia,
         usuario.login,
         usuario.nome, // This contains empresa data
+        usuario.grupo,
         formatarData(usuario.dataRenovacao),
         formatarData(usuario.dataVencimento),
         statusDisplay.text
@@ -576,7 +599,38 @@ const ControlPlane: React.FC = () => {
     return `${year}${month}${day}${hours}${minutes}${period}.csv`;
   };
 
-  // Download filtered table data
+  // Handle manual refresh
+  const handleRefresh = async () => {
+    const vanguardUsers = await fetchVanguardData(true); // Force refresh
+    const rvxUsers = getMockRVXData();
+    const newCorbanUsers = getMockNewCorbanData();
+
+    const sistemas: Sistema[] = [
+      {
+        id: 'vanguard',
+        nome: 'Vanguard',
+        descricao: 'Sistema de Controle de Usuários',
+        usuarios: vanguardUsers
+      },
+      {
+        id: 'newcorban',
+        nome: 'New Corban',
+        descricao: 'Sistema de Correspondente Bancário',
+        usuarios: newCorbanUsers
+      }
+    ];
+
+    setSistemas(sistemas);
+    
+    toast.success('Dados atualizados com sucesso!', {
+      position: "top-right",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  };
   const handleDownload = async () => {
     try {
       if (usuariosFiltrados.length === 0) {
@@ -727,8 +781,8 @@ const ControlPlane: React.FC = () => {
       // Close modal and refresh data
       handleFecharModal();
       
-      // Refresh the user list by calling fetchVanguardData again
-      const vanguardUsers = await fetchVanguardData();
+      // Refresh the user list by calling fetchVanguardData again with force refresh
+      const vanguardUsers = await fetchVanguardData(true);
       const rvxUsers = getMockRVXData();
       const newCorbanUsers = getMockNewCorbanData();
 
@@ -738,12 +792,6 @@ const ControlPlane: React.FC = () => {
           nome: 'Vanguard',
           descricao: 'Sistema de Controle de Usuários',
           usuarios: vanguardUsers
-        },
-        {
-          id: 'rvx',
-          nome: 'RVX',
-          descricao: 'Sistema de Gestão Operacional',
-          usuarios: rvxUsers
         },
         {
           id: 'newcorban',
@@ -774,14 +822,136 @@ const ControlPlane: React.FC = () => {
     }
   };
 
-  const handleRenovar = (usuarioId: string) => {
-    // TODO: Connect to API later
-    console.log('Renovar usuário:', usuarioId);
+  const handleRenovar = async (usuarioId: string) => {
+    try {
+      console.log('Renovando usuário:', usuarioId);
+      
+      const response = await fetch('https://n8n.sistemavieira.com.br/webhook/api/up-vanguard', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: usuarioId })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('User renewed successfully:', result);
+      
+      // Show success toast notification
+      toast.success('Usuário renovado com sucesso!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      
+      // Refresh the user list
+      const vanguardUsers = await fetchVanguardData(true);
+      const rvxUsers = getMockRVXData();
+      const newCorbanUsers = getMockNewCorbanData();
+
+      const sistemas: Sistema[] = [
+        {
+          id: 'vanguard',
+          nome: 'Vanguard',
+          descricao: 'Sistema de Controle de Usuários',
+          usuarios: vanguardUsers
+        },
+        {
+          id: 'newcorban',
+          nome: 'New Corban',
+          descricao: 'Sistema de Correspondente Bancário',
+          usuarios: newCorbanUsers
+        }
+      ];
+
+      setSistemas(sistemas);
+      
+    } catch (error) {
+      console.error('Error renewing user:', error);
+      
+      // Show error toast notification
+      toast.error('Erro ao renovar usuário. Tente novamente.', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
   };
 
-  const handleInativar = (usuarioId: string) => {
-    // TODO: Connect to API later
-    console.log('Inativar usuário:', usuarioId);
+  const handleInativar = async (usuarioId: string) => {
+    try {
+      console.log('Inativando usuário:', usuarioId);
+      
+      const response = await fetch('https://n8n.sistemavieira.com.br/webhook/api/del-vanguard', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: usuarioId })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('User inactivated successfully:', result);
+      
+      // Show success toast notification
+      toast.success('Usuário inativado com sucesso!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      
+      // Refresh the user list
+      const vanguardUsers = await fetchVanguardData(true);
+      const rvxUsers = getMockRVXData();
+      const newCorbanUsers = getMockNewCorbanData();
+
+      const sistemas: Sistema[] = [
+        {
+          id: 'vanguard',
+          nome: 'Vanguard',
+          descricao: 'Sistema de Controle de Usuários',
+          usuarios: vanguardUsers
+        },
+        {
+          id: 'newcorban',
+          nome: 'New Corban',
+          descricao: 'Sistema de Correspondente Bancário',
+          usuarios: newCorbanUsers
+        }
+      ];
+
+      setSistemas(sistemas);
+      
+    } catch (error) {
+      console.error('Error inactivating user:', error);
+      
+      // Show error toast notification
+      toast.error('Erro ao inativar usuário. Tente novamente.', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
   };
 
   return (
@@ -926,6 +1096,20 @@ const ControlPlane: React.FC = () => {
                     </div>
                   </div>
                   
+                  {/* Group Filter */}
+                  <div className="w-full lg:w-48">
+                    <select
+                      value={filtros.grupo}
+                      onChange={(e) => setFiltros({...filtros, grupo: e.target.value})}
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    >
+                      <option value="">Todos os Grupos</option>
+                      {[...new Set(usuarios.map(u => u.grupo).filter(Boolean))].sort().map(grupo => (
+                        <option key={grupo} value={grupo}>{grupo}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
                   {/* Status Filter */}
                   <div className="w-full lg:w-48">
                     <select
@@ -994,10 +1178,29 @@ const ControlPlane: React.FC = () => {
                 
                 {/* Results Counter and Action Buttons */}
                 <div className="flex items-center justify-between text-sm text-neutral-600">
-                  <span>
-                    Mostrando {usuariosFiltrados.length} de {usuarios.length} usuários
-                  </span>
+                  <div className="flex items-center space-x-4">
+                    <span>
+                      Mostrando {usuariosFiltrados.length} de {usuarios.length} usuários
+                    </span>
+                    {/* Cache status indicator */}
+                    {cachedVanguardData && sistemaAtual?.id === 'vanguard' && (
+                      <span className="text-xs text-neutral-400">
+                        Cache: {Math.round((Date.now() - lastApiCall) / 1000 / 60)}min atrás
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center space-x-3">
+                    {/* Refresh Button */}
+                    <Button
+                      onClick={handleRefresh}
+                      variant="secondary"
+                      icon={<RefreshCw size={16} className={loading ? 'animate-spin' : ''} />}
+                      className="text-sm px-3 py-2"
+                      disabled={loading}
+                    >
+                      Atualizar
+                    </Button>
+                    
                     {/* Download Button */}
                     <Button
                       onClick={handleDownload}
@@ -1025,10 +1228,11 @@ const ControlPlane: React.FC = () => {
                       </Button>
                     )}
                     
-                    {(filtros.busca || filtros.status || filtros.dataRenovacaoInicial || filtros.dataRenovacaoFinal || filtros.dataVencimentoInicial || filtros.dataVencimentoFinal) && (
+                    {(filtros.busca || filtros.grupo || filtros.status || filtros.dataRenovacaoInicial || filtros.dataRenovacaoFinal || filtros.dataVencimentoInicial || filtros.dataVencimentoFinal) && (
                       <button
                         onClick={() => setFiltros({
                           busca: '',
+                          grupo: '',
                           status: '',
                           dataRenovacaoInicial: '',
                           dataRenovacaoFinal: '',
@@ -1078,6 +1282,9 @@ const ControlPlane: React.FC = () => {
                       onClick={() => handleSort('nome')}
                     >
                       Empresa {getSortIcon('nome')}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                      Grupo
                     </th>
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors"
@@ -1134,6 +1341,9 @@ const ControlPlane: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900">
                           {usuario.nome}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                          {usuario.grupo}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
                           {formatarData(usuario.dataRenovacao)}

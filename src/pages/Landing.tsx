@@ -349,7 +349,7 @@ const Landing: React.FC = () => {
               description="Controle de usuarios, logins e senhas ."
               onClick={() => navigate("/dashboard/controlusers")}
               disabled={
-                !(isAuthenticated && user?.hierarquia === 1 || user?.hierarquia === 2)
+                !(isAuthenticated && user?.hierarquia === 1)
               }
               // disabled={true}
             />
