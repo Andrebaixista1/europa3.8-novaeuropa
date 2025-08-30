@@ -8,13 +8,18 @@ import Button from "../components/Button";
 
 interface Usuario {
   id: string;
-  agencia: string;
-  login: string;
+  agencia?: string; // Optional for New Corban
+  login?: string; // Optional for New Corban
   nome: string; // This will actually hold empresa data from API
-  grupo: string; // Group information from API
-  dataRenovacao: string;
-  dataVencimento: string;
+  grupo: string; // Group information from API / equipe_nome for New Corban
+  dataRenovacao?: string; // Optional for New Corban
+  dataVencimento?: string; // Optional for New Corban
   status: 'ativo' | 'inativo' | 'aguardando';
+  // New Corban specific fields
+  empresa?: string;
+  usuarioNome?: string; // usuario_nome for New Corban
+  dataCadastro?: string; // cadastro for New Corban
+  ultimoLog?: string; // last_activity for New Corban
 }
 
 interface VanguardAPIResponse {
@@ -29,6 +34,15 @@ interface VanguardAPIResponse {
   status: string;
   vencimento: string | null;
   grupo: string;
+}
+
+interface NewCorbanAPIResponse {
+  empresa: string;
+  equipe_nome: string;
+  usuario_nome: string;
+  cadastro: string;
+  last_activity: string;
+  excluido: number;
 }
 
 interface Sistema {
@@ -163,6 +177,45 @@ const ControlPlane: React.FC = () => {
     }
   };
 
+  // Fetch New Corban data from API
+  const fetchNewCorbanData = async () => {
+    setLoading(true);
+    try {
+      console.log('Fetching New Corban data from API');
+      const response = await fetch('https://n8n.sistemavieira.com.br/webhook/api/getall-new', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: NewCorbanAPIResponse[] = await response.json();
+      
+      // Map API response to our Usuario interface
+      const usuarios: Usuario[] = data.map((item, index) => ({
+        id: (index + 1).toString(), // Generate sequential ID
+        empresa: item.empresa,
+        usuarioNome: item.usuario_nome,
+        nome: item.empresa, // Map empresa to nome for consistency
+        grupo: item.equipe_nome, // Map equipe_nome to grupo
+        dataCadastro: item.cadastro,
+        ultimoLog: item.last_activity,
+        status: item.excluido === 0 ? 'inativo' : 'ativo' // 0 = Inativo, other = Ativo
+      }));
+      
+      return usuarios;
+    } catch (error) {
+      console.error('Error fetching New Corban data:', error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Mock data for RVX and New Corban (keeping as before)
   const getMockRVXData = (): Usuario[] => [
     {
@@ -245,7 +298,7 @@ const ControlPlane: React.FC = () => {
     const loadData = async () => {
       const vanguardUsers = await fetchVanguardData();
       const rvxUsers = getMockRVXData();
-      const newCorbanUsers = getMockNewCorbanData();
+      const newCorbanUsers = await fetchNewCorbanData();
 
       const sistemas: Sistema[] = [
         {
@@ -339,9 +392,10 @@ const ControlPlane: React.FC = () => {
     // Apply search filter
     if (filtros.busca) {
       filtrados = filtrados.filter(usuario => 
-        usuario.login.toLowerCase().includes(filtros.busca.toLowerCase()) ||
+        (usuario.login?.toLowerCase().includes(filtros.busca.toLowerCase()) || false) ||
         usuario.nome.toLowerCase().includes(filtros.busca.toLowerCase()) ||
-        usuario.agencia.toLowerCase().includes(filtros.busca.toLowerCase())
+        (usuario.agencia?.toLowerCase().includes(filtros.busca.toLowerCase()) || false) ||
+        (usuario.usuarioNome?.toLowerCase().includes(filtros.busca.toLowerCase()) || false)
       );
     }
 
@@ -361,24 +415,24 @@ const ControlPlane: React.FC = () => {
     // Apply renewal date filter
     if (filtros.dataRenovacaoInicial) {
       filtrados = filtrados.filter(usuario => 
-        new Date(usuario.dataRenovacao) >= new Date(filtros.dataRenovacaoInicial)
+        usuario.dataRenovacao && new Date(usuario.dataRenovacao) >= new Date(filtros.dataRenovacaoInicial)
       );
     }
     if (filtros.dataRenovacaoFinal) {
       filtrados = filtrados.filter(usuario => 
-        new Date(usuario.dataRenovacao) <= new Date(filtros.dataRenovacaoFinal)
+        usuario.dataRenovacao && new Date(usuario.dataRenovacao) <= new Date(filtros.dataRenovacaoFinal)
       );
     }
 
     // Apply expiration date filter
     if (filtros.dataVencimentoInicial) {
       filtrados = filtrados.filter(usuario => 
-        new Date(usuario.dataVencimento) >= new Date(filtros.dataVencimentoInicial)
+        usuario.dataVencimento && new Date(usuario.dataVencimento) >= new Date(filtros.dataVencimentoInicial)
       );
     }
     if (filtros.dataVencimentoFinal) {
       filtrados = filtrados.filter(usuario => 
-        new Date(usuario.dataVencimento) <= new Date(filtros.dataVencimentoFinal)
+        usuario.dataVencimento && new Date(usuario.dataVencimento) <= new Date(filtros.dataVencimentoFinal)
       );
     }
 
@@ -394,16 +448,16 @@ const ControlPlane: React.FC = () => {
           break;
         case 'dataRenovacao':
         case 'dataVencimento':
-          aValue = new Date(a[sortField]);
-          bValue = new Date(b[sortField]);
+          aValue = a[sortField] ? new Date(a[sortField]!) : new Date(0);
+          bValue = b[sortField] ? new Date(b[sortField]!) : new Date(0);
           break;
         case 'status':
           aValue = getStatusDisplay(a).status;
           bValue = getStatusDisplay(b).status;
           break;
         default:
-          aValue = a[sortField].toLowerCase();
-          bValue = b[sortField].toLowerCase();
+          aValue = (a[sortField] || '').toLowerCase();
+          bValue = (b[sortField] || '').toLowerCase();
       }
 
       if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
@@ -572,8 +626,8 @@ const ControlPlane: React.FC = () => {
         usuario.login,
         usuario.nome, // This contains empresa data
         usuario.grupo,
-        formatarData(usuario.dataRenovacao),
-        formatarData(usuario.dataVencimento),
+        formatarData(usuario.dataRenovacao || ''),
+        formatarData(usuario.dataVencimento || ''),
         statusDisplay.text
       ];
     });
@@ -603,7 +657,7 @@ const ControlPlane: React.FC = () => {
   const handleRefresh = async () => {
     const vanguardUsers = await fetchVanguardData(true); // Force refresh
     const rvxUsers = getMockRVXData();
-    const newCorbanUsers = getMockNewCorbanData();
+    const newCorbanUsers = await fetchNewCorbanData();
 
     const sistemas: Sistema[] = [
       {
@@ -784,7 +838,7 @@ const ControlPlane: React.FC = () => {
       // Refresh the user list by calling fetchVanguardData again with force refresh
       const vanguardUsers = await fetchVanguardData(true);
       const rvxUsers = getMockRVXData();
-      const newCorbanUsers = getMockNewCorbanData();
+      const newCorbanUsers = await fetchNewCorbanData();
 
       const sistemas: Sistema[] = [
         {
@@ -841,7 +895,7 @@ const ControlPlane: React.FC = () => {
       const result = await response.json();
       console.log('User renewed successfully:', result);
       
-      // Show success toast notification
+      // Show success toast notifiication
       toast.success('Usuário renovado com sucesso!', {
         position: "top-right",
         autoClose: 3000,
@@ -854,7 +908,7 @@ const ControlPlane: React.FC = () => {
       // Refresh the user list
       const vanguardUsers = await fetchVanguardData(true);
       const rvxUsers = getMockRVXData();
-      const newCorbanUsers = getMockNewCorbanData();
+      const newCorbanUsers = await fetchNewCorbanData();
 
       const sistemas: Sistema[] = [
         {
@@ -920,7 +974,7 @@ const ControlPlane: React.FC = () => {
       // Refresh the user list
       const vanguardUsers = await fetchVanguardData(true);
       const rvxUsers = getMockRVXData();
-      const newCorbanUsers = getMockNewCorbanData();
+      const newCorbanUsers = await fetchNewCorbanData();
 
       const sistemas: Sistema[] = [
         {
@@ -928,6 +982,12 @@ const ControlPlane: React.FC = () => {
           nome: 'Vanguard',
           descricao: 'Sistema de Controle de Usuários',
           usuarios: vanguardUsers
+        },
+        {
+          id: 'rvx',
+          nome: 'RVX',
+          descricao: 'Sistema de Gestão Operacional',
+          usuarios: rvxUsers
         },
         {
           id: 'newcorban',
@@ -1265,39 +1325,58 @@ const ControlPlane: React.FC = () => {
                     >
                       ID {getSortIcon('id')}
                     </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors"
-                      onClick={() => handleSort('agencia')}
-                    >
-                      Agência {getSortIcon('agencia')}
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors"
-                      onClick={() => handleSort('login')}
-                    >
-                      Login {getSortIcon('login')}
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors"
-                      onClick={() => handleSort('nome')}
-                    >
-                      Empresa {getSortIcon('nome')}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                      Grupo
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors"
-                      onClick={() => handleSort('dataRenovacao')}
-                    >
-                      Data Renovação {getSortIcon('dataRenovacao')}
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors"
-                      onClick={() => handleSort('dataVencimento')}
-                    >
-                      Data Vencimento {getSortIcon('dataVencimento')}
-                    </th>
+                    {sistemaAtual?.id === 'vanguard' ? (
+                      <>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors"
+                          onClick={() => handleSort('agencia')}
+                        >
+                          Agência {getSortIcon('agencia')}
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors"
+                          onClick={() => handleSort('login')}
+                        >
+                          Login {getSortIcon('login')}
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors"
+                          onClick={() => handleSort('nome')}
+                        >
+                          Empresa {getSortIcon('nome')}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                          Grupo
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors"
+                          onClick={() => handleSort('dataRenovacao')}
+                        >
+                          Data Renovação {getSortIcon('dataRenovacao')}
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors"
+                          onClick={() => handleSort('dataVencimento')}
+                        >
+                          Data Vencimento {getSortIcon('dataVencimento')}
+                        </th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                          Equipe
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                          Usuário
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                          Data Cadastro
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                          Último Log
+                        </th>
+                      </>
+                    )}
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors"
                       onClick={() => handleSort('status')}
@@ -1333,24 +1412,43 @@ const ControlPlane: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">
                           {usuario.id}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
-                          {usuario.agencia}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900">
-                          {usuario.login}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900">
-                          {usuario.nome}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
-                          {usuario.grupo}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
-                          {formatarData(usuario.dataRenovacao)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
-                          {formatarData(usuario.dataVencimento)}
-                        </td>
+                        {sistemaAtual?.id === 'vanguard' ? (
+                          <>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                              {usuario.agencia}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900">
+                              {usuario.login}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900">
+                              {usuario.nome}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                              {usuario.grupo}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                              {formatarData(usuario.dataRenovacao || '')}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                              {formatarData(usuario.dataVencimento || '')}
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                              {usuario.grupo}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900">
+                              {usuario.usuarioNome}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                              {formatarData(usuario.dataCadastro || '')}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                              {formatarData(usuario.ultimoLog || '')}
+                            </td>
+                          </>
+                        )}
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusDisplay.color}`}>
                             {statusDisplay.text}
