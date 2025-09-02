@@ -152,7 +152,7 @@ const ControlPlane: React.FC = () => {
         id: item.id.toString(),
         agencia: item.codigo.toString(),
         login: item.login,
-        nome: item.empresa, // Map empresa to nome field
+        nome: item.nome, // Use nome field from API
         grupo: item.grupo, // Map grupo field
         dataRenovacao: item.renovacao || new Date().toISOString().split('T')[0], // Use today if null
         dataVencimento: item.vencimento || new Date().toISOString().split('T')[0], // Use today if null
