@@ -5,6 +5,7 @@ import { saveAs } from 'file-saver';
 import { toast } from 'react-toastify';
 import DashboardHeader from "../components/DashboardHeader";
 import Button from "../components/Button";
+import { useAuth } from "../context/AuthContext";
 
 interface Usuario {
   id: string;
@@ -79,6 +80,7 @@ interface NovoUsuarioForm {
 }
 
 const ControlPlane: React.FC = () => {
+  const { user } = useAuth();
   const [sistemas, setSistemas] = useState<Sistema[]>([]);
   const [sistemaAtualIndex, setSistemaAtualIndex] = useState(0);
   const [usuariosFiltrados, setUsuariosFiltrados] = useState<Usuario[]>([]);
@@ -1271,8 +1273,8 @@ const ControlPlane: React.FC = () => {
                       Download
                     </Button>
                     
-                    {/* Add Button (only for Vanguard) */}
-                    {sistemaAtual?.id === 'vanguard' && (
+                    {/* Add Button (only for Vanguard and hierarchy != 3) */}
+                    {sistemaAtual?.id === 'vanguard' && user?.hierarquia !== 3 && (
                       <Button
                         onClick={() => {
                           console.log('Add button clicked!');
@@ -1456,24 +1458,30 @@ const ControlPlane: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           {sistemaAtual?.id === 'vanguard' ? (
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                onClick={() => handleRenovar(usuario.id)}
-                                variant="primary"
-                                icon={<RotateCcw size={14} />}
-                                className="text-xs px-2 py-1"
-                              >
-                                Renovar
-                              </Button>
-                              <Button
-                                onClick={() => handleInativar(usuario.id)}
-                                variant="secondary"
-                                icon={<UserMinus size={14} />}
-                                className="text-xs px-2 py-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-                              >
-                                Inativar
-                              </Button>
-                            </div>
+                            user?.hierarquia === 3 ? (
+                              <span className="text-neutral-400 text-xs italic">
+                                Acesso restrito
+                              </span>
+                            ) : (
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  onClick={() => handleRenovar(usuario.id)}
+                                  variant="primary"
+                                  icon={<RotateCcw size={14} />}
+                                  className="text-xs px-2 py-1"
+                                >
+                                  Renovar
+                                </Button>
+                                <Button
+                                  onClick={() => handleInativar(usuario.id)}
+                                  variant="secondary"
+                                  icon={<UserMinus size={14} />}
+                                  className="text-xs px-2 py-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                                >
+                                  Inativar
+                                </Button>
+                              </div>
+                            )
                           ) : (
                             <span className="text-neutral-400 text-xs italic">
                               Sem ações disponíveis

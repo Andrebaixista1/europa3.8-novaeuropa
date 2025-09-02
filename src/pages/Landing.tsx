@@ -346,14 +346,14 @@ const Landing: React.FC = () => {
                   </span>
                 </>
               }
-              description="Controle de usuarios, logins e senhas ."
+              description="Controle de usuarios, aqui você tem toda a visão de usuarios do Vanguard e New Corban"
               onClick={() => navigate("/dashboard/controlusers")}
               disabled={
-                !(isAuthenticated && user?.hierarquia === 1)
+                !(isAuthenticated && user?.hierarquia === 1 || user?.hierarquia === 3)
               }
               // disabled={true}
             />
-            <QueryOption
+           {/* <QueryOption 
               icon={<ScanQrCode  size={32} className="text-white" />}
               title={
                 <>
@@ -370,7 +370,7 @@ const Landing: React.FC = () => {
                 !(isAuthenticated && user?.hierarquia === 1)
               }
               // disabled={true}
-            />
+            />*/}
             <QueryOption
               icon={<HardDriveDownload  size={32} className="text-white" />}
               title={
