@@ -142,7 +142,11 @@ const ControlPlane: React.FC = () => {
         grupo: item.grupo, // Map grupo field
         dataRenovacao: item.renovacao || new Date().toISOString().split('T')[0],
         dataVencimento: item.vencimento || new Date().toISOString().split('T')[0],
-        status: 'ativo' as const // Will be calculated by getStatusDisplay
+        status: item.status ? (
+          item.status.toLowerCase() === 'ativo' ? 'ativo' : 
+          item.status.toLowerCase() === 'inativo' ? 'inativo' : 
+          item.status.toLowerCase() === 'aguardando' ? 'aguardando' : 'ativo'
+        ) as 'ativo' | 'inativo' | 'aguardando' : 'ativo' // Map status correctly
       }));
       
       // Cache the data
@@ -189,28 +193,45 @@ const ControlPlane: React.FC = () => {
   const sistemaAtual = sistemas[sistemaAtualIndex];
   const usuarios = sistemaAtual?.usuarios || [];
 
-  // Get status color and text with new logic
+  // Get status color and text - always respect backend status first
   const getStatusDisplay = (usuario: Usuario) => {
-    // Grupos especiais sempre têm status Ativo
-    const gruposEspeciais = ['matriz', 'parceiros', 'parceiro', 'socio'];
-    if (usuario.grupo && gruposEspeciais.includes(usuario.grupo.toLowerCase())) {
+    // First, check if we have a status from the backend and use it
+    if (usuario.status) {
+      console.log('Usuario status from backend:', usuario.status, 'for user:', usuario.login);
+      const backendStatus = usuario.status.toLowerCase();
+      if (backendStatus === 'ativo') {
+        return {
+          status: 'ativo',
+          text: 'Ativo',
+          color: 'bg-green-100 text-green-800'
+        };
+      } else if (backendStatus === 'inativo') {
+        console.log('Returning inativo status for user:', usuario.login);
+        return {
+          status: 'inativo',
+          text: 'Inativo',
+          color: 'bg-red-100 text-red-800'
+        };
+      } else if (backendStatus === 'aguardando') {
+        return {
+          status: 'aguardando',
+          text: 'Aguardando Renovação',
+          color: 'bg-yellow-100 text-yellow-800'
+        };
+      }
+    }
+    
+    console.log('No backend status found for user:', usuario.login, 'falling back to date logic');
+    // Fallback to date-based logic only if no backend status is available
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    // If no vencimento date, default to ativo
+    if (!usuario.dataVencimento) {
       return {
         status: 'ativo',
         text: 'Ativo',
         color: 'bg-green-100 text-green-800'
-      };
-    }
-    
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    
-    // If no vencimento date, use stored status
-    if (!usuario.dataVencimento) {
-      return {
-        status: usuario.status,
-        text: usuario.status === 'ativo' ? 'Ativo' : usuario.status === 'inativo' ? 'Inativo' : 'Aguardando Renovação',
-        color: usuario.status === 'ativo' ? 'bg-green-100 text-green-800' : 
-               usuario.status === 'inativo' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
       };
     }
     
@@ -220,7 +241,7 @@ const ControlPlane: React.FC = () => {
     const diffTime = dataVencimento.getTime() - hoje.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    // New logic:
+    // Date-based logic as fallback:
     // - Before vencimento date = Ativo
     // - On vencimento date or up to 3 days after = Aguardando Renovação
     // - 4th day after vencimento = Inativo
