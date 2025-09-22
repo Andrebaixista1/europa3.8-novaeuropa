@@ -22,6 +22,7 @@ import Button from "../components/Button";
 import { useAuth } from "../context/AuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import milvusImage from "../components/images/milvus.png";
 
 interface QueryOptionProps {
   icon: ReactNode;
@@ -37,7 +38,7 @@ const TypewriterRotator: React.FC<{ frases: string[] }> = ({ frases }) => {
   const [displayed, setDisplayed] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [charIndex, setCharIndex] = useState(0);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const fraseAtual = frases[index];
@@ -183,7 +184,7 @@ const Landing: React.FC = () => {
             </motion.div>
           ) : (
             <div className="flex items-center gap-4">
-              <span className="text-neutral-600">Bem-vindo, {user.username}</span>
+              <span className="text-neutral-600">Bem-vindo, {user?.username}</span>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -224,6 +225,7 @@ const Landing: React.FC = () => {
             variants={itemVariants}
             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mx-auto"
           >
+          {/*
             <QueryOption
               icon={<Brain size={32} className="text-white" />}
               // title={
@@ -255,7 +257,7 @@ const Landing: React.FC = () => {
               }
               onClick={handleLuaAiQuery}
               disabled={true}
-            />
+            />*/}
             
 
             <QueryOption
@@ -318,6 +320,25 @@ const Landing: React.FC = () => {
             /> */}
 
             <QueryOption
+              icon={<img src={milvusImage} alt="Milvus" className="w-8 h-8 bg-transparent" />}
+              title={
+                <>
+                  Milvus (Tickets){" "}
+                  <br></br>
+                  <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">
+                    Em Desenvolvimento
+                  </span>
+                </>
+              }
+              description="Por aqui voce pode acompanhar a fila de tickets em tempo real."
+              onClick={() => navigate("/dashboard/macica-atualizada")}
+              disabled={
+                !(isAuthenticated && user?.hierarquia === 1)
+              }
+              // disabled={false}
+            />
+
+            <QueryOption
               icon={<Handshake  size={32} className="text-white" />}
               title={
                 <>
@@ -341,8 +362,8 @@ const Landing: React.FC = () => {
                 <>
                   Controle Planejamento{" "}
                   <br></br>
-                  <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">
-                    Em Desenvolvimento
+                  <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded">
+                    Novo
                   </span>
                 </>
               }

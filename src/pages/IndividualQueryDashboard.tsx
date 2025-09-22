@@ -86,11 +86,20 @@ const IndividualQueryDashboard: React.FC = () => {
 
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
+  const [pollingIntervalId, setPollingIntervalId] = useState<number | null>(null);
 
   // Adicionar estado para nome do banco
   const [nomeBancoDesembolso, setNomeBancoDesembolso] = useState<string>("");
   const [codigoBancoBuscado, setCodigoBancoBuscado] = useState<string>("");
+
+  // Estado para notificação técnica
+  const [showTechnicalNotification, setShowTechnicalNotification] = useState(true);
+
+  // Timer para notificação técnica (15 segundos)
+  useEffect(() => {
+    const timer = setTimeout(() => setShowTechnicalNotification(false), 15000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Preencher automaticamente CPF e NB vindos da URL
   useEffect(() => {
@@ -336,7 +345,7 @@ const IndividualQueryDashboard: React.FC = () => {
               {
                 icon: <UserIcon size={20} className="text-primary-600" />,
                 title: "Login",
-                value: user.username,
+                value: user?.username || "",
                 subtitle: "Usuário logado",
               },
             ].map((c, i) => (
@@ -363,6 +372,16 @@ const IndividualQueryDashboard: React.FC = () => {
             <h2 className="text-2xl font-semibold text-center mb-8">
               Consulta Individual (IN100)
             </h2>
+            {/* Notificação técnica amarela */}
+            {showTechnicalNotification && (
+              <div className="mb-6 p-4 rounded-lg bg-yellow-100 border border-yellow-300 text-yellow-800 text-left">
+                <div className="font-medium text-base leading-relaxed">
+                  Sistema com instabilidade temporária. Algumas consultas podem apresentar lentidão.
+                  <br />
+                  <span className="font-semibold">Att: André Felipe - Líder de Planejamento & Desenvolvimento</span>
+                </div>
+              </div>
+            )}
             {consultaIniciada && aguardandoResposta ? (
               <div className="flex flex-col items-center justify-center py-8">
                 <LoadingSpinner size="lg" />
