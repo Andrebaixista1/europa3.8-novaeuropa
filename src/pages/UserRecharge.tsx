@@ -1,5 +1,6 @@
 // src/pages/UserRecharge.tsx
 import React, { useEffect, useState, useMemo } from "react";
+import fetchWithFallback from "../utils/fetchWithFallback";
 import { DollarSign, FilterX, ArrowUpDown, Users, Activity, CalendarDays, FileDown, PlusCircle } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -63,7 +64,7 @@ const UserRecharge: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/webhook/api/creditos`);
+      const res = await fetchWithFallback(`${API_BASE}/webhook/api/creditos`);
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: `Erro HTTP ${res.status}` }));
         throw new Error(errorData.message || `Erro ao buscar dados de recarga: ${res.status}`);
@@ -86,7 +87,7 @@ const UserRecharge: React.FC = () => {
     async function fetchTotalUsers() {
       setIsLoadingUsers(true);
       try {
-        const res = await fetch(`${API_BASE}/webhook/api/usuarios`);
+        const res = await fetchWithFallback(`${API_BASE}/webhook/api/usuarios`);
         if (!res.ok) {
           console.error(`Erro HTTP ${res.status} ao buscar total de usuários`);
           setTotalApiUsers(0);

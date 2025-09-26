@@ -23,6 +23,7 @@ import {
 
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import fetchWithFallback from "../utils/fetchWithFallback";
 
 export const API_BASE = 'https://n8n.sistemavieira.com.br'; // em prod ficará vazio → usa path relativo e o vercel.json proxya
 
@@ -116,7 +117,7 @@ const IndividualQueryDashboard: React.FC = () => {
 
     setIsLoadingLimits(true);
     try {
-      const res = await fetch(`${API_BASE}/webhook/api/saldo`, {
+      const res = await fetchWithFallback(`${API_BASE}/webhook/api/saldo`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: user.id }),
@@ -168,7 +169,7 @@ const IndividualQueryDashboard: React.FC = () => {
 
       // Aguardar 5 segundos antes de chamar a API
       await new Promise(resolve => setTimeout(resolve, 5000));
-      const resposta = await fetch(`${API_BASE}/webhook/api/resposta`, {
+      const resposta = await fetchWithFallback(`${API_BASE}/webhook/api/resposta`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: userId, cpf, nb }),
@@ -254,7 +255,7 @@ const IndividualQueryDashboard: React.FC = () => {
       ).toString();
 
     try {
-      const res = await fetch(url, {
+      const res = await fetchWithFallback(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

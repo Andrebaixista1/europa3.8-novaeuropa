@@ -115,7 +115,7 @@ const ControlPlane: React.FC = () => {
     setLoading(true);
     try {
       console.log('Fetching fresh Vanguard data from API');
-      const response = await fetch('https://n8n.sistemavieira.com.br/webhook/api/getall-vanguard', {
+      const response = await fetchWithFallback('https://n8n.sistemavieira.com.br/webhook/api/getall-vanguard', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -724,7 +724,7 @@ const ControlPlane: React.FC = () => {
       
       console.log('Sending payload:', payload);
       
-      const response = await fetch('https://n8n.sistemavieira.com.br/webhook/api/add-vanguard', {
+      const response = await fetchWithFallback('https://n8n.sistemavieira.com.br/webhook/api/add-vanguard', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -789,7 +789,7 @@ const ControlPlane: React.FC = () => {
     try {
       console.log('Renovando usuário:', usuarioId);
       
-      const response = await fetch('https://n8n.sistemavieira.com.br/webhook/api/up-vanguard', {
+      const response = await fetchWithFallback('https://n8n.sistemavieira.com.br/webhook/api/up-vanguard', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -847,7 +847,7 @@ const ControlPlane: React.FC = () => {
     try {
       console.log('Inativando usuário:', usuarioId);
       
-      const response = await fetch('https://n8n.sistemavieira.com.br/webhook/api/del-vanguard', {
+      const response = await fetchWithFallback('https://n8n.sistemavieira.com.br/webhook/api/del-vanguard', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

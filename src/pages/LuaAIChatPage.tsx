@@ -1,3 +1,4 @@
+import fetchWithFallback from "../utils/fetchWithFallback";
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import DashboardHeader from "../components/DashboardHeader";
@@ -66,7 +67,7 @@ const LuaAIChatPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/webhook/api/lua-ia`, {
+      const res = await fetchWithFallback(`${API_BASE}/webhook/api/lua-ia`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: user.id, message: userMessage.text }),
@@ -218,3 +219,5 @@ const LuaAIChatPage: React.FC = () => {
 };
 
 export default LuaAIChatPage;
+
+

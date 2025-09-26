@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import fetchWithFallback from "../utils/fetchWithFallback";
 import DashboardHeader from "../components/DashboardHeader";
 import { useAuth } from "../context/AuthContext";
 import { Eye, Download as DownloadIcon, X, Loader2 } from "lucide-react";
@@ -945,3 +946,5 @@ const DownloadMacica: React.FC = () => {
 };
 
 export default DownloadMacica;
+
+

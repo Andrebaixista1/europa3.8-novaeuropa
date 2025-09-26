@@ -1,5 +1,6 @@
 // src/pages/CreateLogins.tsx
 import React, { useEffect, useState, useMemo } from "react";
+import fetchWithFallback from "../utils/fetchWithFallback";
 import { Users, FilterX, UserPlus, UserMinus } from "lucide-react";
 import DashboardHeader from "../components/DashboardHeader";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -35,7 +36,7 @@ const CreateLogins: React.FC = () => {
     async function fetchUsuarios() {
       setIsLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/webhook/api/usuarios`);
+        const res = await fetchWithFallback(`${API_BASE}/webhook/api/usuarios`);
         if (!res.ok) throw new Error(`Erro ${res.status}`);
         const data: Usuario[] = await res.json();
         setUsuarios(data);
