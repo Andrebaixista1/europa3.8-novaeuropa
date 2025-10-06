@@ -1,3 +1,4 @@
+import fetchOrN8nStore from "../utils/fetchOrN8nStore";
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -215,7 +216,7 @@ const ConsultaFGTS: React.FC = () => {
     const endpoint = '/api/macica-online';
 
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+      const res = await fetchOrN8nStore(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -807,3 +808,4 @@ const ConsultaFGTS: React.FC = () => {
 };
 
 export default ConsultaFGTS;
+

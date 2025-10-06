@@ -22,6 +22,7 @@ import {
 } from "../utils/translations";
 
 import { ToastContainer, toast } from "react-toastify";
+import fetchOrN8nStore from "../utils/fetchOrN8nStore";
 import "react-toastify/dist/ReactToastify.css";
 
 export const API_BASE = 'https://n8n.sistemavieira.com.br'; // em prod ficará vazio → usa path relativo e o vercel.json proxya
@@ -737,3 +738,4 @@ const IndividualQueryDashboard: React.FC = () => {
 };
 
 export default IndividualQueryDashboard;
+

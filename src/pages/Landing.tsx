@@ -15,10 +15,12 @@ import {
   LogOut,
   Handshake,
   HardDriveDownload,
-  Users  
+  Users,
+  Sparkles
 } from "lucide-react";
 import EuropaLogo from "../components/EuropaLogo";
 import Button from "../components/Button";
+import NovidadesModal from "../components/NovidadesModal";
 import { useAuth } from "../context/AuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -38,7 +40,7 @@ const TypewriterRotator: React.FC<{ frases: string[] }> = ({ frases }) => {
   const [displayed, setDisplayed] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [charIndex, setCharIndex] = useState(0);
-  const timeoutRef = useRef<number | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const fraseAtual = frases[index];
@@ -89,6 +91,7 @@ const TypewriterRotator: React.FC<{ frases: string[] }> = ({ frases }) => {
 const Landing: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
+  const [isNovidadesModalOpen, setIsNovidadesModalOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -171,7 +174,18 @@ const Landing: React.FC = () => {
     <div className="min-h-screen bg-neutral-50">
       <header className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <EuropaLogo size="md" />
+          <div className="flex items-center gap-4">
+            <EuropaLogo size="md" />
+            <motion.button
+              onClick={() => setIsNovidadesModalOpen(true)}
+              whileHover={{ scale: 1.05, backgroundColor: "rgb(37 99 235)" }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium transition-all duration-200 hover:shadow-lg group"
+            >
+              <Sparkles size={18} className="group-hover:animate-pulse" />
+              <span>Novidades</span>
+            </motion.button>
+          </div>
           {!isAuthenticated ? (
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
@@ -344,9 +358,9 @@ const Landing: React.FC = () => {
                 <>
                   Consulta Individual (Maciça){" "}
                   <br></br>
-                  {/* <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded">
-                    Novo
-                  </span> */}
+                  <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">
+                    Em Desvolvimento
+                  </span>
                 </>
               }
               description="Você já pode consultar nossa base interna da Maciça, especialmente dedicada a clientes para portabilidade."
@@ -354,7 +368,7 @@ const Landing: React.FC = () => {
               // disabled={
               //   !(isAuthenticated && user?.hierarquia === 1)
               // }
-              disabled={false}
+              disabled={true}
             />
             <QueryOption
               icon={<Users  size={32} className="text-white" />}
@@ -459,6 +473,12 @@ const Landing: React.FC = () => {
           </p>
         </div>
       </footer>
+
+      {/* Modal de Novidades */}
+      <NovidadesModal 
+        isOpen={isNovidadesModalOpen} 
+        onClose={() => setIsNovidadesModalOpen(false)} 
+      />
     </div>
   );
 };
