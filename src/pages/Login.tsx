@@ -11,7 +11,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export const API_BASE = import.meta.env.DEV
-  ? 'r'
+  ? 'https://n8n.sistemavieira.com.br'
   : '';
 
 const Login: React.FC = () => {

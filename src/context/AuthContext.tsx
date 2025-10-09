@@ -1,8 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-// em /src/config.ts ou logo no topo do AuthContext.tsx
-export const API_BASE = import.meta.env.DEV
-  ? 'https://n8n.sistemavieira.com.br'
-  : ''; // em prod ficará vazio → usa path relativo e o vercel.json proxya
+import { API_BASE, API_ENDPOINTS, buildApiUrl } from '../config/api';
 
 
 interface AuthContextType {
@@ -55,7 +52,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log('[AuthContext] login called with:', { username, password });
     
     try {
-      const response = await fetch(`${API_BASE}/webhook/api/login`, {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.LOGIN), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ login: username, senha: password }),

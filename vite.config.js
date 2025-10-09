@@ -6,12 +6,20 @@ export default defineConfig({
   server: {
     proxy: {
       '/webhook': {
-        target: 'http://177.153.62.236:5679',
+        target: 'https://n8n.sistemavieira.com.br',
         changeOrigin: true,
-        secure: false,
+        secure: true,
         logLevel: 'debug',
-        // --> aqui a gente faz '/webhook/...' virar '//webhook/...' 
-        rewrite: (path) => path.replace(/^\/webhook/, '//webhook'),
+        // Manter o path original
+        rewrite: (path) => path,
+      },
+      '/api': {
+        target: 'https://n8n.sistemavieira.com.br',
+        changeOrigin: true,
+        secure: true,
+        logLevel: 'debug',
+        // Manter o path original
+        rewrite: (path) => path,
       },
     },
   },

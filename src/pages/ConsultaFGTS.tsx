@@ -16,7 +16,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 
-export const API_BASE = 'https://n8n.sistemavieira.com.br/webhook';
+import { API_BASE, API_ENDPOINTS, buildApiUrl } from '../config/api';
 
 interface FormErrors {
   nome?: string;
@@ -73,7 +73,7 @@ const ConsultaFGTS: React.FC = () => {
     if (!user) return;
     setIsLoadingLimits(true);
     try {
-      const res = await fetch(`${API_BASE}/api/saldo`, {
+      const res = await fetch(buildApiUrl(API_ENDPOINTS.SALDO), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: user.id }),
@@ -129,7 +129,7 @@ const ConsultaFGTS: React.FC = () => {
     const endpoint = isEnabled ? '/api/consulta-fgts-online' : '/api/consulta-fgts-offline';
 
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+      const res = await fetch(buildApiUrl(endpoint), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
