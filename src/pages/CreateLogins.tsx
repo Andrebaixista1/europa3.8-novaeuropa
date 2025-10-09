@@ -7,10 +7,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import Button from "../components/Button";
 import AddUserModal from "../components/AddUserModal";
 import DeleteUserModal from "../components/DeleteUserModal";
-
-const API_BASE = import.meta.env.DEV
-  ? "https://n8n.sistemavieira.com.br"
-  : "";
+import { API_ENDPOINTS, buildApiUrl } from '../config/api';
 
 interface Usuario {
   id: number;
@@ -36,7 +33,7 @@ const CreateLogins: React.FC = () => {
     async function fetchUsuarios() {
       setIsLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/webhook/api/usuarios`);
+        const res = await fetch(buildApiUrl(API_ENDPOINTS.USUARIOS));
         if (!res.ok) throw new Error(`Erro ${res.status}`);
         const data: Usuario[] = await res.json();
         setUsuarios(data);

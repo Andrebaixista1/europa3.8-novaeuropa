@@ -9,10 +9,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-export const API_BASE = import.meta.env.DEV
-  ? 'https://n8n.sistemavieira.com.br'
-  : '';
+import { API_ENDPOINTS, buildApiUrl } from '../config/api';
 
 const Login: React.FC = () => {
   const { login, isAuthenticated, error } = useAuth();
@@ -96,7 +93,7 @@ const Login: React.FC = () => {
     }
     try {
       const res = await fetch(
-        `${API_BASE}/webhook/api/alterar`,
+        buildApiUrl(API_ENDPOINTS.ALTERAR),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

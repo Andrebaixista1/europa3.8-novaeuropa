@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Users, UserCheck, UserX, Clock, RotateCcw, UserMinus, ChevronLeft, ChevronRight, Search, Filter, ChevronUp, ChevronDown, Download, Plus, X, RefreshCw } from "lucide-react";
 import { saveAs } from 'file-saver';
 import { toast } from 'react-toastify';
+import { API_ENDPOINTS, buildApiUrl } from '../config/api';
 import DashboardHeader from "../components/DashboardHeader";
 import Button from "../components/Button";
 import { useAuth } from "../context/AuthContext";
@@ -116,7 +117,7 @@ const ControlPlane: React.FC = () => {
     setLoading(true);
     try {
       console.log('Fetching fresh Vanguard data from API');
-      const response = await fetch('https://n8n.sistemavieira.com.br/webhook/api/getall-vanguard', {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.GETALL_VANGUARD), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -725,7 +726,7 @@ const ControlPlane: React.FC = () => {
       
       console.log('Sending payload:', payload);
       
-      const response = await fetch('https://n8n.sistemavieira.com.br/webhook/api/add-vanguard', {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.ADD_VANGUARD), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

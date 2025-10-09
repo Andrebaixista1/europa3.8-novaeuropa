@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import DashboardHeader from "../components/DashboardHeader";
 import { useAuth } from "../context/AuthContext";
 import { Eye, Download as DownloadIcon, X, Loader2 } from "lucide-react";
+import { API_ENDPOINTS, buildApiUrl } from '../config/api';
 
 // Variável não mais necessária - removida
 
@@ -373,7 +374,7 @@ const DownloadMacica: React.FC = () => {
       
       setIsLoadingHistorico(true);
       try {
-        const listRes = await fetch("https://n8n.sistemavieira.com.br/webhook/api/filtros-salvos", {
+        const listRes = await fetch(buildApiUrl(API_ENDPOINTS.FILTROS_SALVOS), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: user?.id ?? 0 })
@@ -613,7 +614,7 @@ const DownloadMacica: React.FC = () => {
 
     try {
       // Faz a requisição
-      const res = await fetch("https://n8n.sistemavieira.com.br/webhook/api/filtrar", {
+      const res = await fetch(buildApiUrl(API_ENDPOINTS.FILTRAR), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...payload, nome: name }),

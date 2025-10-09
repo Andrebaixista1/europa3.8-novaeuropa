@@ -6,14 +6,7 @@ import DashboardHeader from "../components/DashboardHeader";
 import Button from "../components/Button";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
-
-export const N8N_WS_BASE = import.meta.env.DEV
-  ? "https://n8n.sistemavieira.com.br/webhook"
-  : "/webhook";
-
-export const N8N_NEW_CONN_URL = import.meta.env.DEV
-  ? "https://n8n.sistemavieira.com.br/webhook/api/nova-conexao"
-  : "/webhook/api/nova-conexao";
+import { API_BASE, API_ENDPOINTS, buildApiUrl } from '../config/api';
 
 interface Connection {
   id: number;
@@ -59,7 +52,7 @@ const ConexaoWhats: React.FC = () => {
   async function fetchConnections() {
     if (!user) return;
     try {
-      const res = await fetch(`${N8N_WS_BASE}/api/conexoes`, {
+      const res = await fetch(buildApiUrl(API_ENDPOINTS.CONEXOES), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id_usuario: user.id }),
@@ -176,7 +169,7 @@ const ConexaoWhats: React.FC = () => {
   async function confirmDelete() {
     if (!user || deleteTargetId === null) return;
     try {
-      const res = await fetch(`${N8N_WS_BASE}/api/excluir-conexoes`, {
+      const res = await fetch(buildApiUrl(API_ENDPOINTS.EXCLUIR_CONEXOES), {
       // const res = await fetch(`https://n8n.sistemavieira.com.br/webhook-test/api/excluir-conexoes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

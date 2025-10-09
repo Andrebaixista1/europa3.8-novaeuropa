@@ -6,10 +6,7 @@ import Button from "../components/Button";
 import { useAuth } from "../context/AuthContext";
 import { Send } from "lucide-react";
 import LoadingSpinner from "../components/LoadingSpinner";
-
-export const API_BASE = import.meta.env.DEV
-  ? "https://n8n.sistemavieira.com.br"
-  : "";
+import { API_ENDPOINTS, buildApiUrl } from '../config/api';
 
 const saudacaoLua = `
   Olá! 🌙✨<br/>
@@ -67,7 +64,7 @@ const LuaAIChatPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/webhook/api/lua-ia`, {
+      const res = await fetch(buildApiUrl(API_ENDPOINTS.LUA_IA), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: user.id, message: userMessage.text }),
@@ -180,7 +177,7 @@ const LuaAIChatPage: React.FC = () => {
                 className="flex justify-start"
               >
                 <div className="max-w-[70%] p-3 rounded-lg shadow bg-neutral-200 text-neutral-800 rounded-bl-none flex items-center">
-                  <LoadingSpinner size="xs" colorClass="text-neutral-600" />
+                  <LoadingSpinner size="sm" />
                   <span className="ml-2 text-sm">Lua está digitando...</span>
                 </div>
               </motion.div>

@@ -1,7 +1,7 @@
 // Configuração centralizada da API
 export const API_BASE = import.meta.env.DEV
   ? 'https://n8n.sistemavieira.com.br'
-  : '';
+  : ''; // Em produção usa paths relativos com proxy do Vercel
 
 // Para uso em desenvolvimento local com proxy
 export const API_LOCAL = import.meta.env.DEV
@@ -21,11 +21,32 @@ export const API_ENDPOINTS = {
   CONSULTA_FGTS_ONLINE: '/api/consulta-fgts-online',
   CONSULTA_FGTS_OFFLINE: '/api/consulta-fgts-offline',
   MACICA_ONLINE: '/api/macica-online',
-  LUA_IA: '/webhook/api/lua-ia'
+  LUA_IA: '/webhook/api/lua-ia',
+  // Adicionar outros endpoints específicos
+  GETALL_VANGUARD: '/webhook/api/getall-vanguard',
+  ADD_VANGUARD: '/webhook/api/add-vanguard',
+  FILTROS_SALVOS: '/webhook/api/filtros-salvos',
+  FILTRAR: '/webhook/api/filtrar',
+  CONEXOES: '/webhook/api/conexoes',
+  EXCLUIR_CONEXOES: '/webhook/api/excluir-conexoes'
 } as const;
 
 // Função para construir URL completa
 export const buildApiUrl = (endpoint: string, useLocal = false): string => {
   const base = useLocal ? API_LOCAL : API_BASE;
   return `${base}${endpoint}`;
+};
+
+// Função para fazer fetch com configuração automática
+export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
+  const url = buildApiUrl(endpoint);
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+    ...options.headers
+  };
+  
+  return fetch(url, {
+    ...options,
+    headers: defaultHeaders
+  });
 };

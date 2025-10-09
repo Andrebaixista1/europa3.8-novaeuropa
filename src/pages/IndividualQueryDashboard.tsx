@@ -23,9 +23,8 @@ import {
 
 import { ToastContainer, toast } from "react-toastify";
 import fetchOrN8nStore from "../utils/fetchOrN8nStore";
+import { API_ENDPOINTS, buildApiUrl } from '../config/api';
 import "react-toastify/dist/ReactToastify.css";
-
-export const API_BASE = 'https://n8n.sistemavieira.com.br'; // em prod ficará vazio → usa path relativo e o vercel.json proxya
 
 
 interface FormErrors {
@@ -117,7 +116,7 @@ const IndividualQueryDashboard: React.FC = () => {
 
     setIsLoadingLimits(true);
     try {
-      const res = await fetch(`${API_BASE}/webhook/api/saldo`, {
+      const res = await fetch(buildApiUrl(API_ENDPOINTS.SALDO), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: user.id }),
@@ -141,7 +140,7 @@ const IndividualQueryDashboard: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     setIsLoadingLimits(true);
-    fetch(`${API_BASE}/webhook/api/saldo`, {
+    fetch(buildApiUrl(API_ENDPOINTS.SALDO), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: user.id }),
@@ -169,7 +168,7 @@ const IndividualQueryDashboard: React.FC = () => {
 
       // Aguardar 5 segundos antes de chamar a API
       await new Promise(resolve => setTimeout(resolve, 5000));
-      const resposta = await fetch(`${API_BASE}/webhook/api/resposta`, {
+      const resposta = await fetch(buildApiUrl(API_ENDPOINTS.RESPOSTA), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: userId, cpf, nb }),
@@ -242,8 +241,9 @@ const IndividualQueryDashboard: React.FC = () => {
     setConsultaIniciada(false);
     setAguardandoResposta(false);
 
-    const base = `${API_BASE}/webhook/api`;
-    const url = isEnabled ? `${base}/consulta2` : `${base}/consultaoff`;
+    const isOnline = isEnabled;
+    const endpoint = isOnline ? '/webhook/api/consulta2' : '/webhook/api/consultaoff';
+    const url = buildApiUrl(endpoint);
     const payload: any = {
       id: user.id,
       cpf: cpf.replace(/[^\d]/g, ""),
