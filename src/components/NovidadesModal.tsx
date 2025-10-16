@@ -10,6 +10,12 @@ interface NovidadesModalProps {
 const NovidadesModal: React.FC<NovidadesModalProps> = ({ isOpen, onClose }) => {
   const novidades = [
     {
+      data: "16/10",
+      titulo: "Europa 4.0 lançado!",
+      descricao: "A nova versão já está disponível, com um novo design, novas funções, sistema hierárquico e muito mais!\nVeja se sua equipe já tem disponível confirmando com o André do planejamento.",
+      link: "https://europa4.vercel.app/"
+    },
+    {
       data: "06/10",
       titulo: "Nova versão do Europa chegando!",
       descricao: "Uma nova versão do Europa vem por aí, a versão 4.0 vem com um novo design, novas funções, sistema hierárquico e muito mais!"
@@ -74,10 +80,21 @@ const NovidadesModal: React.FC<NovidadesModalProps> = ({ isOpen, onClose }) => {
                           {novidade.data}
                         </span>
                       </div>
-                      <h3 className="font-semibold text-gray-800 mb-2">
-                        {novidade.titulo}
-                      </h3>
-                      <p className="text-gray-600 text-sm leading-relaxed">
+                      {novidade.link ? (
+                        <a
+                          href={novidade.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-blue-600 hover:underline mb-2 inline-flex items-center gap-2"
+                        >
+                          {novidade.titulo}
+                        </a>
+                      ) : (
+                        <h3 className="font-semibold text-gray-800 mb-2">
+                          {novidade.titulo}
+                        </h3>
+                      )}
+                      <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
                         {novidade.descricao}
                       </p>
                     </motion.div>
