@@ -94,6 +94,10 @@ const Landing: React.FC = () => {
   const [isNovidadesModalOpen, setIsNovidadesModalOpen] = useState(false);
 
   useEffect(() => {
+    setIsNovidadesModalOpen(true);
+  }, []);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "F5" || event.keyCode === 116) {
         event.preventDefault(); // Previne o comportamento padrão de atualização do F5

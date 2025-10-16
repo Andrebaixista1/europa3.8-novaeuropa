@@ -1,6 +1,6 @@
 // Configuração centralizada da API
 export const API_BASE = import.meta.env.DEV
-  ? 'https://n8n.sistemavieira.com.br'
+  ? 'https://webhook.sistemavieira.com.br'
   : ''; // Em produção usa paths relativos com proxy do Vercel
 
 // Para uso em desenvolvimento local com proxy
