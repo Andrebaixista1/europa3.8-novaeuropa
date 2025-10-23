@@ -373,18 +373,16 @@ const IndividualQueryDashboard: React.FC = () => {
             <h2 className="text-2xl font-semibold text-center mb-8">
               Consulta Individual (IN100)
             </h2>
-            {/* Notificação técnica amarela 
-            {showTechnicalNotification && (
-              <div className="mb-6 p-4 rounded-lg bg-yellow-100 border border-yellow-300 text-yellow-800 text-left">
-                <div className="font-medium text-base leading-relaxed">
-                  Sistema com instabilidade temporária. Algumas consultas podem apresentar lentidão.
-                  <br />
-                  <span className="font-semibold">Att: André Felipe - Líder de Planejamento & Desenvolvimento</span>
-                </div>
-              </div>
-            )}*/}
+           
             {consultaIniciada && aguardandoResposta ? (
               <div className="flex flex-col items-center justify-center py-8">
+              <div className="mb-6 p-4 rounded-lg bg-yellow-100 border border-yellow-300 text-yellow-800 text-left">
+                <div className="font-medium text-base leading-relaxed">
+                  Devido à queda da AWS em 20/10/2025, estamos com instabilidade 
+                  <br />Consultas podem levar mais de 5 min. 
+                  <br />Saiba mais em: <a>https://status.aws.amazon.com/ </a>
+                   </div>
+              </div>
                 <LoadingSpinner size="lg" />
                 <span className="mt-4 text-lg text-primary-600 font-semibold">
                   Carregando...
