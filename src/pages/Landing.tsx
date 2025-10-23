@@ -207,7 +207,7 @@ const Landing: React.FC = () => {
         variants={itemVariants}
         className="mx-auto mb-8 flex flex-col items-center"
       >
-        <div className="text-neutral-600 text-sm uppercase tracking-widest mb-3">Contagem regressiva para o fim do Nova Europa 3.0</div>
+        <div className="text-neutral-600 text-sm uppercase tracking-widest mb-3">Contagem regressiva para o fim do Nova Europa 3.8</div>
         <div className="flex items-stretch justify-center gap-3 md:gap-4">
           <div className="bg-white rounded-xl shadow-apple px-4 py-3 md:px-6 md:py-4 text-center min-w-[90px] md:min-w-[120px]">
             <div className="text-3xl md:text-5xl font-bold text-neutral-800 leading-none">{days}</div>

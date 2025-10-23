@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "ask": [
+      "Read(!C:\\Users\\andrb\\Documents\\europa3.8-novaeuropa/**)",
+      "Edit(!C:\\Users\\andrb\\Documents\\europa3.8-novaeuropa/**)"
+    ],
+    "allow": [
+      "Read(C:\\Users\\andrb\\Documents\\europa3.8-novaeuropa/**)",
+      "Edit(C:\\Users\\andrb\\Documents\\europa3.8-novaeuropa/**)"
+    ]
+  },
+  "memoryImport": {},
+  "monitoring": {}
+}

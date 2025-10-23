@@ -11,8 +11,8 @@ const NovidadesModal: React.FC<NovidadesModalProps> = ({ isOpen, onClose }) => {
   const novidades = [
     {
       data: "23/10",
-      titulo: "Fim do Nova Europa 3.0",
-      descricao: "O Europa 3.0 será descontinuado. Todas as equipes devem migrar para o Europa 4.0 o quanto antes para continuar usufruindo dos benefícios do sistema.\n Essa migração será feita a partir de Janeiro de 2026.",
+      titulo: "Fim do Nova Europa 3.8",
+      descricao: "O Europa 3.8 será descontinuado. Todas as equipes devem migrar para o Europa 4.0 o quanto antes para continuar usufruindo dos benefícios do sistema.\n Essa migração será feita a partir de Janeiro de 2026.",
       link: "https://europa4.vercel.app/"
     },
     {
