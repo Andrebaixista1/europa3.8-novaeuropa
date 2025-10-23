@@ -174,6 +174,62 @@ const Landing: React.FC = () => {
     },
   };
 
+  // Contador regressivo até 09/01/2026 (9 de janeiro de 2026)
+  const CountdownTimer: React.FC = () => {
+    // Define a data alvo como 9 de janeiro de 2026 à meia-noite (horário local)
+    const target = useRef<Date>(new Date(2026, 0, 9, 0, 0, 0));
+    const calc = () => {
+      const now = new Date().getTime();
+      const diff = target.current.getTime() - now;
+      const clamped = Math.max(0, diff);
+      const totalSeconds = Math.floor(clamped / 1000);
+      const days = Math.floor(totalSeconds / (60 * 60 * 24));
+      const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60));
+      const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+      const seconds = totalSeconds % 60;
+      return { days, hours, minutes, seconds };
+    };
+
+    const [{ days, hours, minutes, seconds }, setTime] = useState(calc());
+
+    useEffect(() => {
+      // Atualiza a cada segundo (tempo real)
+      const id = setInterval(() => setTime(calc()), 1_000);
+      // Atualiza imediatamente ao montar para garantir render consistente
+      setTime(calc());
+      return () => clearInterval(id);
+    }, []);
+
+    const pad = (n: number) => String(n).padStart(2, "0");
+
+    return (
+      <motion.div
+        variants={itemVariants}
+        className="mx-auto mb-8 flex flex-col items-center"
+      >
+        <div className="text-neutral-600 text-sm uppercase tracking-widest mb-3">Contagem regressiva para o fim do Nova Europa 3.0</div>
+        <div className="flex items-stretch justify-center gap-3 md:gap-4">
+          <div className="bg-white rounded-xl shadow-apple px-4 py-3 md:px-6 md:py-4 text-center min-w-[90px] md:min-w-[120px]">
+            <div className="text-3xl md:text-5xl font-bold text-neutral-800 leading-none">{days}</div>
+            <div className="mt-1 text-[10px] md:text-xs text-neutral-500 uppercase tracking-wider">dias</div>
+          </div>
+          <div className="bg-white rounded-xl shadow-apple px-4 py-3 md:px-6 md:py-4 text-center min-w-[90px] md:min-w-[120px]">
+            <div className="text-3xl md:text-5xl font-bold text-neutral-800 leading-none">{pad(hours)}</div>
+            <div className="mt-1 text-[10px] md:text-xs text-neutral-500 uppercase tracking-wider">horas</div>
+          </div>
+          <div className="bg-white rounded-xl shadow-apple px-4 py-3 md:px-6 md:py-4 text-center min-w-[90px] md:min-w-[120px]">
+            <div className="text-3xl md:text-5xl font-bold text-neutral-800 leading-none">{pad(minutes)}</div>
+            <div className="mt-1 text-[10px] md:text-xs text-neutral-500 uppercase tracking-wider">minutos</div>
+          </div>
+          <div className="bg-white rounded-xl shadow-apple px-4 py-3 md:px-6 md:py-4 text-center min-w-[90px] md:min-w-[120px]">
+            <div className="text-3xl md:text-5xl font-bold text-neutral-800 leading-none">{pad(seconds)}</div>
+            <div className="mt-1 text-[10px] md:text-xs text-neutral-500 uppercase tracking-wider">segundos</div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-neutral-50">
       <header className="bg-white shadow-sm">
@@ -224,6 +280,8 @@ const Landing: React.FC = () => {
           variants={containerVariants}
           className="max-w-6xl mx-auto text-center"
         >
+          {/* Contador grande acima do título principal */}
+          <CountdownTimer />
           <motion.h1
             variants={itemVariants}
             className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-blue-gradient"
