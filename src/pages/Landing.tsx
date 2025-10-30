@@ -340,12 +340,15 @@ const Landing: React.FC = () => {
               icon={<Search size={32} className="text-white" />}
               title={
                 <>
-                  Consulta Individual (IN100){" "}
+                  Consulta Individual (IN100) <br></br>
+                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded">
+                    Bloqueado
+                  </span>
                 </>
               }
               description="Pesquise informações específicas com precisão e resultados detalhados."
               onClick={handleIndividualQuery}
-              disabled={false}
+              disabled={true}
             />
 
             <QueryOption
