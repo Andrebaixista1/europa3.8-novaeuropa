@@ -9,12 +9,12 @@ interface NovidadesModalProps {
 
 const NovidadesModal: React.FC<NovidadesModalProps> = ({ isOpen, onClose }) => {
   const novidades = [
-    {
-      data: "30/10",
-      titulo: "Fim da Consulta IN100",
-      descricao: "De acordo com as ultimas informações o IN100 não pode ser mais consultado.\nAinda estamos buscando alternativas para disponibilizar essa consulta novamente, porem ainda não temos uma solução definida.",
-      // link: "https://europa4.vercel.app/"
-    },
+    // {
+    //   data: "30/10",
+    //   titulo: "Fim da Consulta IN100",
+    //   descricao: "De acordo com as ultimas informações o IN100 não pode ser mais consultado.\nAinda estamos buscando alternativas para disponibilizar essa consulta novamente, porem ainda não temos uma solução definida.",
+    //   // link: "https://europa4.vercel.app/"
+    // },
     {
       data: "23/10",
       titulo: "Fim do Nova Europa 3.8",

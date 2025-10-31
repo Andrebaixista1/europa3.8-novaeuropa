@@ -341,14 +341,14 @@ const Landing: React.FC = () => {
               title={
                 <>
                   Consulta Individual (IN100) <br></br>
-                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded">
+                  {/* <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded">
                     Bloqueado
-                  </span>
+                  </span> */}
                 </>
               }
               description="Pesquise informações específicas com precisão e resultados detalhados."
               onClick={handleIndividualQuery}
-              disabled={true}
+              // disabled={true}
             />
 
             <QueryOption
